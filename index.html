@@ -864,8 +864,11 @@
 const SUPABASE_URL = 'https://pmxmxfvtnosyyjkiwvim.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c';
 const GOOGLE_CLIENT_ID = '100533655569-5f2to59mu0d7kn5n2bovvs502tarqpbn.apps.googleusercontent.com';
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let supabase = null;
+if (window.supabase && window.supabase.createClient) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 // Auth state
 let currentUser = null;
@@ -936,43 +939,62 @@ async function signInWithGoogle() {
   const authStatus = $('auth-status');
   authStatus.textContent = 'Signing in...';
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin
-    }
-  });
+  if (!supabase) {
+    authStatus.textContent = 'Error: Supabase not initialized';
+    return;
+  }
 
-  if (error) {
-    authStatus.textContent = 'Sign in failed: ' + error.message;
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+
+    if (error) {
+      authStatus.textContent = 'Sign in failed: ' + error.message;
+    }
+  } catch (e) {
+    authStatus.textContent = 'Error: ' + e.message;
   }
 }
 
 async function checkAuth() {
-  const { data: { user } } = await supabase.auth.getUser();
+  if (!supabase) {
+    console.error('Supabase not initialized');
+    return;
+  }
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
   
-  if (user) {
-    currentUser = user;
-    
-    // Check if profile exists, create if not
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      const username = user.email?.split('@')[0] || 'User' + Math.random().toString(36).slice(-4);
-      await supabase
+    if (user) {
+      currentUser = user;
+      
+      // Check if profile exists, create if not
+      const { data: profile } = await supabase
         .from('user_profiles')
-        .insert({ id: user.id, email: user.email, username });
-    }
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-    $('auth-screen').classList.add('hidden');
-    $('splash').classList.remove('hidden');
-  } else {
+      if (!profile) {
+        const username = user.email?.split('@')[0] || 'User' + Math.random().toString(36).slice(-4);
+        await supabase
+          .from('user_profiles')
+          .insert({ id: user.id, email: user.email, username });
+      }
+
+      $('auth-screen').classList.add('hidden');
+      $('splash').classList.remove('hidden');
+    } else {
+      $('auth-screen').classList.remove('hidden');
+      $('splash').classList.add('hidden');
+    }
+  } catch (e) {
+    console.error('Auth check error:', e);
     $('auth-screen').classList.remove('hidden');
-    $('splash').classList.add('hidden');
   }
 }
 
