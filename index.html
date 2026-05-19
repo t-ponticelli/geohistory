@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#fef7ed">
+<title>GeoHistory</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  :root {
+    --cream: #fef7ed;
+    --paper: #fffbf3;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-mute: #888;
+    --orange: #ff7a45;
+    --orange-deep: #e8632d;
+    --green: #16a34a;
+    --red: #dc2626;
+    --border: #e8dfd0;
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    /* Patriotic palette */
+    --usa-red: #bf0a30;
+    --usa-blue: #002868;
+    --usa-red-soft: #f9e3e7;
+    --usa-blue-soft: #e0e6f3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background: var(--cream);
+    font-family: var(--sans);
+    color: var(--ink);
+    position: fixed;
+    inset: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ─── TOP BAR ─── */
+  #topbar {
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
+    padding: max(env(safe-area-inset-top), 12px) 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 100;
+    flex-shrink: 0;
+    position: relative;
+  }
+  /* Patriotic stripe under topbar */
+  #topbar::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -3px;
+    height: 3px;
+    background: linear-gradient(to right,
+      var(--usa-red) 0%, var(--usa-red) 50%,
+      var(--usa-blue) 50%, var(--usa-blue) 100%);
+  }
+
+  .brand {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-style: italic;
+  }
+  .brand span { color: var(--usa-red); }
+
+  .pip-row {
+    display: flex;
+    gap: 5px;
+    flex: 1;
+    justify-content: center;
+  }
+  .pip {
+    width: 22px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: all 0.3s;
+  }
+  .pip.active { background: var(--usa-red); width: 32px; }
+  .pip.done { background: var(--ink); }
+
+  .score-chip {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    min-width: 52px;
+    text-align: center;
+  }
+
+  /* ─── MAP ─── */
+  #map-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #1a2634;
+  }
+
+  #map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tap-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ink);
+    color: var(--cream);
+    padding: 10px 18px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 400;
+    box-shadow: var(--shadow-lg);
+    animation: bob 2s ease-in-out infinite;
+    white-space: nowrap;
+  }
+  .tap-hint.hidden { opacity: 0; transition: opacity 0.3s; }
+
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, -50%); }
+    50% { transform: translate(-50%, calc(-50% - 6px)); }
+  }
+
+  /* ─── CLUE CARD ─── */
+  #clue-card {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    background: var(--paper);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+    padding: 14px 16px;
+    z-index: 500;
+    transition: all 0.35s cubic-bezier(.16,1,.3,1);
+    border: 1px solid var(--border);
+  }
+  #clue-card.collapsed { padding: 10px 14px; }
+
+  .clue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  #clue-card.collapsed .clue-header { margin-bottom: 0; }
+
+  .clue-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .q-tag {
+    background: var(--ink);
+    color: var(--cream);
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+  }
+  .pts-tag {
+    background: var(--usa-red);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: var(--mono);
+  }
+
+  .toggle-btn {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  #clue-card.collapsed .toggle-btn { transform: rotate(180deg); }
+
+  .clue-title {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.35rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
+    transition: all 0.3s;
+  }
+  #clue-card.collapsed .clue-title {
+    font-size: 0.95rem;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .clue-body {
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(.16,1,.3,1), opacity 0.25s;
+    max-height: 500px;
+    opacity: 1;
+  }
+  #clue-card.collapsed .clue-body {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .clue-year {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 0.85rem;
+    color: var(--usa-red);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+
+  .clue-text {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  .hint-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .hint {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 100px;
+  }
+
+  /* ─── ACTION BAR ─── */
+  #action-bar {
+    background: var(--paper);
+    border-top: 1px solid var(--border);
+    padding: 14px 16px max(env(safe-area-inset-bottom), 16px);
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--usa-blue);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 14px;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 0 #001a4a;
+    position: relative;
+    top: 0;
+  }
+  .btn-primary:active:not(:disabled) {
+    top: 2px;
+    box-shadow: 0 2px 0 #001a4a;
+  }
+  .btn-primary:disabled {
+    background: #e8e0d0;
+    color: var(--ink-mute);
+    box-shadow: 0 4px 0 #d4ccba;
+    cursor: default;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 14px;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #000;
+    position: relative;
+    top: 0;
+    transition: all 0.15s;
+  }
+  .btn-secondary:active {
+    top: 2px;
+    box-shadow: 0 2px 0 #000;
+  }
+
+  /* ─── RESULT SHEET ─── */
+  #result-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--paper);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+    padding: 20px 20px max(env(safe-area-inset-bottom), 20px);
+    z-index: 1500;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(.16,1,.3,1);
+  }
+  #result-sheet.show { transform: translateY(0); }
+
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+
+  .result-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .result-emoji {
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .result-text { flex: 1; }
+  .result-headline {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.1rem;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+  .result-sub {
+    font-size: 0.78rem;
+    color: var(--ink-mute);
+    margin-top: 2px;
+  }
+
+  .result-points {
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .result-points-big {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 2.8rem;
+    line-height: 1;
+    color: var(--usa-red);
+  }
+  .result-points-label {
+    font-size: 0.7rem;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  .result-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat {
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  /* ─── SPLASH ─── */
+  #splash {
+    position: absolute;
+    inset: 0;
+    background: var(--cream);
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    padding: max(env(safe-area-inset-top), 24px) 24px max(env(safe-area-inset-bottom), 24px);
+  }
+
+  .splash-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .splash-flag-wrap {
+    width: 220px;
+    height: 130px;
+    margin-bottom: 18px;
+    perspective: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .betsy-flag {
+    width: 100%;
+    height: auto;
+    border-radius: 3px;
+    box-shadow: 0 8px 24px rgba(0,40,104,0.25);
+    animation: wave 4s ease-in-out infinite;
+    transform-origin: left center;
+  }
+
+  @keyframes wave {
+    0%, 100% { transform: rotateY(-8deg) skewY(-1.5deg); }
+    25% { transform: rotateY(4deg) skewY(2deg); }
+    50% { transform: rotateY(-4deg) skewY(-2deg); }
+    75% { transform: rotateY(8deg) skewY(1deg); }
+  }
+
+  .splash-title {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 3rem;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--ink);
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+  .splash-title span { color: var(--usa-red); }
+
+  .splash-sub {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    font-weight: 500;
+    margin-bottom: 32px;
+    max-width: 280px;
+  }
+
+  .splash-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+  }
+  .rule {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.35;
+  }
+  .rule-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  /* ─── END SCREEN ─── */
+  #end-screen {
+    position: absolute;
+    inset: 0;
+    background: var(--cream);
+    z-index: 2500;
+    display: none;
+    flex-direction: column;
+    padding: max(env(safe-area-inset-top), 24px) 20px max(env(safe-area-inset-bottom), 20px);
+    overflow-y: auto;
+  }
+  #end-screen.show { display: flex; }
+
+  .end-top {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .end-emoji { font-size: 4rem; margin-bottom: 8px; }
+  .end-title {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    font-style: italic;
+  }
+  .end-subtitle {
+    font-size: 0.85rem;
+    color: var(--ink-mute);
+  }
+
+  .end-score-card {
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .end-score-num {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 4.5rem;
+    line-height: 1;
+    color: var(--usa-red);
+  }
+  .end-score-max {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink-mute);
+    margin-top: 6px;
+  }
+  .end-rank {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .breakdown {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 6px 14px;
+    margin-bottom: 16px;
+  }
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .br-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .br-emoji { font-size: 1rem; flex-shrink: 0; }
+  .br-title { color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .br-pts { font-family: var(--mono); font-size: 0.85rem; color: var(--ink); font-weight: 600; flex-shrink: 0; padding-left: 10px; }
+
+  /* ─── Map markers ─── */
+  .guess-pin {
+    width: 25px;
+    height: 25px;
+    background: var(--usa-red);
+    border: 2.7px solid white;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    animation: pinDrop 0.4s cubic-bezier(.16,1,.3,1);
+    cursor: pointer;
+  }
+  .correct-pin {
+    width: 32px;
+    height: 32px;
+    background: var(--green);
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(22,163,74,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    animation: pinDrop 0.4s cubic-bezier(.16,1,.3,1);
+  }
+  .correct-label {
+    background: var(--ink);
+    color: var(--cream);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-top: 6px;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+  }
+  @keyframes pinDrop {
+    0% { transform: translateY(-20px) scale(0.4) rotate(-45deg); opacity: 0; }
+    60% { transform: translateY(2px) scale(1.15) rotate(-45deg); opacity: 1; }
+    100% { transform: translateY(0) scale(1) rotate(-45deg); opacity: 1; }
+  }
+  .correct-pin {
+    animation-name: pinDropCircle;
+  }
+  @keyframes pinDropCircle {
+    0% { transform: translateY(-20px) scale(0.4); opacity: 0; }
+    60% { transform: translateY(2px) scale(1.15); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  /* MapLibre attribution adjustments */
+  .maplibregl-ctrl-attrib {
+    background: rgba(255,251,243,0.85) !important;
+    font-size: 9px !important;
+  }
+  .maplibregl-ctrl-bottom-right {
+    margin-bottom: 8px !important;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SPLASH -->
+  <div id="splash">
+    <div class="splash-top">
+      <div class="splash-flag-wrap">
+        <svg class="betsy-flag" viewBox="0 0 190 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- 13 alternating red/white stripes -->
+          <rect x="0" y="0" width="190" height="100" fill="#bf0a30"/>
+          <g fill="#ffffff">
+            <rect x="0" y="7.7" width="190" height="7.7"/>
+            <rect x="0" y="23.1" width="190" height="7.7"/>
+            <rect x="0" y="38.5" width="190" height="7.7"/>
+            <rect x="0" y="53.8" width="190" height="7.7"/>
+            <rect x="0" y="69.2" width="190" height="7.7"/>
+            <rect x="0" y="84.6" width="190" height="7.7"/>
+          </g>
+          <!-- Blue canton -->
+          <rect x="0" y="0" width="76" height="53.8" fill="#002868"/>
+          <!-- 13 stars in a circle -->
+          <g fill="#ffffff" id="stars-group">
+            <!-- Stars arranged in a circle - calculated positions -->
+            <g transform="translate(38, 26.9)">
+              <g class="star" transform="translate(0,-16)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(27.7) translate(0,-16) rotate(-27.7)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(55.4) translate(0,-16) rotate(-55.4)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(83.1) translate(0,-16) rotate(-83.1)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(110.8) translate(0,-16) rotate(-110.8)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(138.5) translate(0,-16) rotate(-138.5)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(166.2) translate(0,-16) rotate(-166.2)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(193.8) translate(0,-16) rotate(-193.8)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(221.5) translate(0,-16) rotate(-221.5)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(249.2) translate(0,-16) rotate(-249.2)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(276.9) translate(0,-16) rotate(-276.9)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(304.6) translate(0,-16) rotate(-304.6)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+              <g class="star" transform="rotate(332.3) translate(0,-16) rotate(-332.3)"><polygon points="0,-3 0.9,-0.9 3,-0.9 1.2,0.5 1.9,2.7 0,1.4 -1.9,2.7 -1.2,0.5 -3,-0.9 -0.9,-0.9"/></g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <h1 class="splash-title">Geo<span>History</span></h1>
+      <p class="splash-sub">Today's theme: <strong>World War II</strong>. Read a clue, drop your pin where it happened.</p>
+      <div class="splash-rules">
+        <div class="rule"><span class="rule-icon">📜</span><span>5 historical events, increasing in difficulty</span></div>
+        <div class="rule"><span class="rule-icon">📍</span><span>Tap the map to drop your pin</span></div>
+        <div class="rule"><span class="rule-icon">🎯</span><span>Score tiers: Elite · Excellent · Good · Okay · Miss</span></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="brand">Geo<span>History</span></div>
+    <div class="pip-row" id="pip-row"></div>
+    <div class="score-chip" id="score-chip">0</div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <div id="clue-card">
+      <div class="clue-header">
+        <div class="clue-meta">
+          <span class="q-tag" id="q-tag">Q1 / 5</span>
+          <span class="pts-tag" id="pts-tag">100 pts</span>
+        </div>
+        <button class="toggle-btn" onclick="toggleClue()">▼</button>
+      </div>
+      <div class="clue-title" id="clue-title">Loading…</div>
+      <div class="clue-body">
+        <div class="clue-year" id="clue-year"></div>
+        <div class="clue-text" id="clue-text"></div>
+      </div>
+    </div>
+
+    <div class="tap-hint" id="tap-hint">👆 Tap to drop pin</div>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div id="action-bar">
+    <button class="btn-primary" id="guess-btn" disabled>Drop a pin to guess</button>
+  </div>
+
+  <!-- RESULT SHEET -->
+  <div id="result-sheet">
+    <div class="sheet-handle"></div>
+    <div class="result-banner">
+      <div class="result-emoji" id="res-emoji">🎯</div>
+      <div class="result-text">
+        <div class="result-headline" id="res-headline">Nice try!</div>
+        <div class="result-sub" id="res-sub">The answer was…</div>
+      </div>
+    </div>
+    <div class="result-points">
+      <div class="result-points-big" id="res-pts">0</div>
+      <div class="result-points-label">Points earned</div>
+    </div>
+    <div class="result-stats">
+      <div class="stat">
+        <div class="stat-val" id="res-dist">— km</div>
+        <div class="stat-label">Off by</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="res-total">0</div>
+        <div class="stat-label">Total Score</div>
+      </div>
+    </div>
+    <button class="btn-secondary" id="next-btn" onclick="nextQuestion()">Next Question →</button>
+  </div>
+
+  <!-- END SCREEN -->
+  <div id="end-screen">
+    <div class="end-top">
+      <div class="end-emoji" id="end-emoji">🏆</div>
+      <div class="end-title" id="end-title">Game Complete</div>
+      <div class="end-subtitle">Here's how you did</div>
+    </div>
+    <div class="end-score-card">
+      <div class="end-score-num" id="final-score">0</div>
+      <div class="end-score-max" id="final-max">out of 1000</div>
+      <div class="end-rank" id="end-rank"></div>
+    </div>
+    <div class="breakdown" id="breakdown"></div>
+    <button class="btn-primary" onclick="resetGame()">Play Again</button>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// GAME DATA
+// ═══════════════════════════════════════════════════════════════════════
+
+const QUESTIONS = [
+  {
+    year: "1941",
+    title: "Pearl Harbor",
+    clue: "Site of the December 1941 surprise attack—a day that will live in infamy—that brought the US into WWII.",
+    answer: { lat: 21.3587, lng: -157.9496 },
+    location: "Pearl Harbor, Hawaii",
+    emoji: "💣"
+  },
+  {
+    year: "1945",
+    title: "Nagasaki",
+    clue: "The second and final atomic bomb was dropped here on August 9, 1945.",
+    answer: { lat: 32.7487, lng: 129.8781 },
+    location: "Nagasaki, Japan",
+    emoji: "☢️"
+  },
+  {
+    year: "1942",
+    title: "Midway",
+    clue: "Turning point naval battle where the US destroyed four Japanese aircraft carriers in June 1942.",
+    answer: { lat: 28.2062, lng: -177.3629 },
+    location: "Midway Atoll",
+    emoji: "⚓"
+  },
+  {
+    year: "1944",
+    title: "Bastogne",
+    clue: "Key position defended by US forces during the Battle of the Bulge winter offensive of 1944.",
+    answer: { lat: 50.0024, lng: 5.7116 },
+    location: "Bastogne, Belgium",
+    emoji: "❄️"
+  },
+  {
+    year: "1942",
+    title: "Casablanca",
+    clue: "Operation Torch: This 1942 amphibious assault preceded D-Day by nearly two years as America's first major WWII landing.",
+    answer: { lat: 33.5731, lng: -7.5898 },
+    location: "Casablanca, Morocco",
+    emoji: "🏖️"
+  }
+];
+
+const MAX_POINTS = [100, 100, 200, 300, 300];
+
+// Mile-based scoring tiers. Each tier = fraction of MAX_POINTS for that question.
+// Elite: 0-5 mi → 100% | Excellent: 5-50 mi → 80% | Good: 50-150 mi → 50%
+// Okay: 150-300 mi → 25% | Miss: >300 mi → 0%
+function scoreFor(distMiles, maxPts) {
+  let pct;
+  if (distMiles <= 5) pct = 1.0;
+  else if (distMiles <= 50) pct = 0.8;
+  else if (distMiles <= 150) pct = 0.5;
+  else if (distMiles <= 300) pct = 0.25;
+  else pct = 0;
+  return Math.round(maxPts * pct);
+}
+
+function tierFor(distMiles) {
+  if (distMiles <= 5) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
+  if (distMiles <= 50) return { name: 'Excellent', emoji: '🔥', color: '#16a34a' };
+  if (distMiles <= 150) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
+  if (distMiles <= 300) return { name: 'Okay', emoji: '😅', color: '#ff7a45' };
+  return { name: 'Miss', emoji: '💀', color: '#dc2626' };
+}
+
+let currentQ = 0;
+let totalScore = 0;
+let breakdown = [];
+let guessLngLat = null;
+let guessed = false;
+let map;
+let guessMarker = null;
+let correctMarker = null;
+let lineSourceAdded = false;
+
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════════════════════════════════════
+// MAP INIT (MapLibre GL JS + ESRI World Imagery satellite tiles)
+// ═══════════════════════════════════════════════════════════════════════
+
+function initMap() {
+  map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+      sources: {
+        'satellite': {
+          type: 'raster',
+          tiles: [
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          ],
+          tileSize: 256,
+          maxzoom: 18,
+          attribution: 'Tiles © Esri'
+        }
+      },
+      layers: [
+        { id: 'satellite-layer', type: 'raster', source: 'satellite' }
+      ]
+    },
+    center: [-75, 38],
+    zoom: 4.2,
+    minZoom: 1,
+    maxZoom: 16,
+    attributionControl: false
+  });
+
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+  // Disable rotation — keeps mental model simple
+  map.dragRotate.disable();
+  map.touchZoomRotate.disableRotation();
+
+  // Tap to drop pin
+  map.on('click', (e) => {
+    if (guessed) return;
+    placeGuess(e.lngLat);
+  });
+
+  map.on('load', () => {
+    // Country borders (worldwide) — patriotic blue
+    map.addSource('countries', {
+      type: 'geojson',
+      data: 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson'
+    });
+    map.addLayer({
+      id: 'country-borders',
+      type: 'line',
+      source: 'countries',
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': [
+          'interpolate', ['linear'], ['zoom'],
+          1, 0.6,
+          5, 1.4,
+          10, 2.2
+        ],
+        'line-opacity': 0.85
+      }
+    });
+
+    // US state borders — white dashed
+    map.addSource('us-states', {
+      type: 'geojson',
+      data: 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
+    });
+    map.addLayer({
+      id: 'us-state-borders',
+      type: 'line',
+      source: 'us-states',
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': [
+          'interpolate', ['linear'], ['zoom'],
+          3, 0.5,
+          6, 1.2,
+          10, 1.8
+        ],
+        'line-opacity': 0.7,
+        'line-dasharray': [3, 2]
+      }
+    });
+
+    // Source for the connecting line between guess and correct answer
+    map.addSource('connector', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] }
+    });
+    map.addLayer({
+      id: 'connector-line',
+      type: 'line',
+      source: 'connector',
+      paint: {
+        'line-color': '#ffffff',
+        'line-width': 2.5,
+        'line-dasharray': [2, 2]
+      }
+    });
+    lineSourceAdded = true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GAME
+// ═══════════════════════════════════════════════════════════════════════
+
+function startGame() {
+  $('splash').style.display = 'none';
+  initMap();
+  loadQuestion(0);
+}
+
+function loadQuestion(idx) {
+  const q = QUESTIONS[idx];
+  guessLngLat = null;
+  guessed = false;
+
+  // Clear markers
+  if (guessMarker) { guessMarker.remove(); guessMarker = null; }
+  if (correctMarker) { correctMarker.remove(); correctMarker = null; }
+
+  // Clear line
+  if (lineSourceAdded) {
+    map.getSource('connector').setData({ type: 'FeatureCollection', features: [] });
+  }
+
+  // Reset map view — focused on the Eastern US but wide enough to suggest world is in play
+  map.flyTo({ center: [-50, 40], zoom: 2.4, duration: 700 });
+
+  $('result-sheet').classList.remove('show');
+  $('clue-card').classList.remove('collapsed');
+  $('tap-hint').classList.remove('hidden');
+
+  const btn = $('guess-btn');
+  btn.disabled = true;
+  btn.textContent = 'Drop a pin to guess';
+
+  $('q-tag').textContent = `Q${idx + 1} / 5`;
+  $('pts-tag').textContent = `${MAX_POINTS[idx]} pts`;
+  $('clue-title').textContent = q.title;
+  $('clue-year').textContent = q.year;
+  $('clue-text').textContent = q.clue;
+
+  updatePips();
+}
+
+function updatePips() {
+  const row = $('pip-row');
+  row.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const p = document.createElement('div');
+    p.className = 'pip' + (i === currentQ ? ' active' : (i < currentQ ? ' done' : ''));
+    row.appendChild(p);
+  }
+}
+
+function toggleClue() {
+  $('clue-card').classList.toggle('collapsed');
+}
+
+function placeGuess(lngLat) {
+  guessLngLat = lngLat;
+
+  if (guessMarker) guessMarker.remove();
+
+  const el = document.createElement('div');
+  el.className = 'guess-pin';
+  guessMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+    .setLngLat(lngLat)
+    .addTo(map);
+
+  $('tap-hint').classList.add('hidden');
+  $('clue-card').classList.add('collapsed');
+
+  const btn = $('guess-btn');
+  btn.disabled = false;
+  btn.textContent = 'Lock in Guess  📍';
+}
+
+$('guess-btn').addEventListener('click', () => {
+  if (!guessLngLat || guessed) return;
+  submitGuess();
+});
+
+// Haversine distance in km
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function submitGuess() {
+  guessed = true;
+  const q = QUESTIONS[currentQ];
+  const distKm = distanceKm(guessLngLat.lat, guessLngLat.lng, q.answer.lat, q.answer.lng);
+  const distMiles = distKm * 0.621371;
+  const maxPts = MAX_POINTS[currentQ];
+  const pts = scoreFor(distMiles, maxPts);
+  const tier = tierFor(distMiles);
+
+  totalScore += pts;
+  breakdown.push({ title: q.title, pts, distMiles: Math.round(distMiles), emoji: q.emoji });
+
+  // Drop correct marker
+  const correctEl = document.createElement('div');
+  correctEl.innerHTML = `
+    <div class="correct-pin">✓</div>
+    <div class="correct-label">${q.location}</div>
+  `;
+  correctEl.style.display = 'flex';
+  correctEl.style.flexDirection = 'column';
+  correctEl.style.alignItems = 'center';
+  correctMarker = new maplibregl.Marker({ element: correctEl, anchor: 'bottom' })
+    .setLngLat([q.answer.lng, q.answer.lat])
+    .addTo(map);
+
+  // Draw connector line
+  if (lineSourceAdded) {
+    map.getSource('connector').setData({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [guessLngLat.lng, guessLngLat.lat],
+            [q.answer.lng, q.answer.lat]
+          ]
+        }
+      }]
+    });
+  }
+
+  // Fit both points
+  const bounds = new maplibregl.LngLatBounds()
+    .extend([guessLngLat.lng, guessLngLat.lat])
+    .extend([q.answer.lng, q.answer.lat]);
+  map.fitBounds(bounds, { padding: { top: 80, bottom: 280, left: 60, right: 60 }, maxZoom: 8, duration: 800 });
+
+  $('score-chip').textContent = totalScore;
+
+  $('res-emoji').textContent = tier.emoji;
+  $('res-headline').textContent = tier.name;
+  $('res-sub').textContent = `The answer: ${q.location}`;
+  $('res-pts').textContent = pts;
+  $('res-pts').style.color = tier.color;
+  $('res-dist').textContent = `${Math.round(distMiles).toLocaleString()} mi`;
+  $('res-total').textContent = totalScore;
+
+  $('next-btn').textContent = currentQ === 4 ? 'See Final Score →' : 'Next Question →';
+
+  setTimeout(() => { $('result-sheet').classList.add('show'); }, 600);
+
+  updatePips();
+}
+
+function nextQuestion() {
+  $('result-sheet').classList.remove('show');
+  currentQ++;
+  if (currentQ >= 5) {
+    setTimeout(showEndScreen, 300);
+    return;
+  }
+  setTimeout(() => loadQuestion(currentQ), 350);
+}
+
+function showEndScreen() {
+  const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
+  const pct = totalScore / maxTotal;
+  $('final-score').textContent = totalScore;
+  $('final-max').textContent = `out of ${maxTotal} possible`;
+
+  let rank, rankEmoji;
+  if (pct >= 0.85) { rank = 'Historian Supreme'; rankEmoji = '🏆'; }
+  else if (pct >= 0.65) { rank = 'Cartographer'; rankEmoji = '🗺️'; }
+  else if (pct >= 0.45) { rank = 'Globetrotter'; rankEmoji = '🌍'; }
+  else if (pct >= 0.2) { rank = 'Tourist'; rankEmoji = '🧭'; }
+  else { rank = 'Lost at Sea'; rankEmoji = '🚣'; }
+
+  $('end-emoji').textContent = rankEmoji;
+  $('end-title').textContent = rank;
+  $('end-rank').textContent = `${Math.round(pct * 100)}% accuracy`;
+
+  const br = $('breakdown');
+  br.innerHTML = breakdown.map((r, i) => `
+    <div class="breakdown-row">
+      <div class="br-left">
+        <span class="br-emoji">${r.emoji}</span>
+        <span class="br-title">${r.title}</span>
+      </div>
+      <span class="br-pts">${r.pts} / ${MAX_POINTS[i]}</span>
+    </div>
+  `).join('');
+
+  $('end-screen').classList.add('show');
+}
+
+function resetGame() {
+  currentQ = 0;
+  totalScore = 0;
+  breakdown = [];
+  guessLngLat = null;
+  guessed = false;
+
+  $('end-screen').classList.remove('show');
+  $('score-chip').textContent = '0';
+
+  loadQuestion(0);
+}
+</script>
+</body>
+</html>
