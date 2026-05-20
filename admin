@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoHistory Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --cream: #fef7ed;
+    --paper: #fffbf3;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --border: #e8dfd0;
+    --usa-red: #bf0a30;
+    --usa-blue: #002868;
+    --green: #16a34a;
+    --shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .header {
+    margin-bottom: 32px;
+  }
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+  .header p {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 12px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+  }
+  .tab-btn.active {
+    color: var(--usa-blue);
+    border-bottom-color: var(--usa-blue);
+  }
+  .tab-btn:hover:not(.active) {
+    color: var(--ink);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* DAILY ROUND TAB */
+  .round-section {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  .question-selector {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .question-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .question-item:last-child { border-bottom: none; }
+  .question-item input[type="checkbox"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  .question-item label {
+    flex: 1;
+    cursor: pointer;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .question-item-title {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .question-item-meta {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* QUESTIONS TAB */
+  .questions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .question-card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .question-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .question-card p {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .question-card-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: var(--cream);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .question-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-sm {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-edit {
+    background: var(--usa-blue);
+    color: white;
+  }
+  .btn-edit:hover { opacity: 0.9; }
+  .btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .btn-delete:hover { background: #fecaca; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--usa-blue);
+    color: white;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: #f5f1e8; }
+
+  .button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  /* MODAL */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+  }
+  .modal-header {
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin-bottom: 16px;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+
+  .status {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .status.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .status.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .status.loading {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>GeoHistory Admin</h1>
+    <p>Manage questions and daily schedule</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('daily')">Today's Round</button>
+    <button class="tab-btn" onclick="switchTab('questions')">All Questions</button>
+  </div>
+
+  <!-- DAILY ROUND TAB -->
+  <div id="daily" class="tab-content active">
+    <div class="round-section">
+      <h2 style="margin-bottom: 16px;">Set Today's Questions</h2>
+      
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="roundDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Theme</label>
+        <input type="text" id="roundTheme" placeholder="e.g., World War II" />
+      </div>
+
+      <div class="form-group">
+        <label>Questions (select 5)</label>
+        <div class="question-selector" id="questionSelector"></div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn btn-primary" onclick="saveRound()">Save Today's Round</button>
+        <button class="btn btn-secondary" onclick="loadRound()">Load Current Round</button>
+      </div>
+
+      <div id="roundStatus"></div>
+    </div>
+  </div>
+
+  <!-- QUESTIONS TAB -->
+  <div id="questions" class="tab-content">
+    <button class="btn btn-primary" onclick="openNewQuestionModal()" style="margin-bottom: 20px;">+ Add New Question</button>
+    <div class="questions-grid" id="questionsGrid"></div>
+  </div>
+</div>
+
+<!-- QUESTION EDITOR MODAL -->
+<div id="questionModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeQuestionModal()">×</button>
+    <div class="modal-header">Edit Question</div>
+    
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="qTitle" />
+    </div>
+    <div class="form-group">
+      <label>Clue</label>
+      <textarea id="qClue"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Year</label>
+      <input type="text" id="qYear" />
+    </div>
+    <div class="form-group">
+      <label>Location</label>
+      <input type="text" id="qLocation" />
+    </div>
+    <div class="form-group">
+      <label>Latitude</label>
+      <input type="number" id="qLat" step="0.0001" />
+    </div>
+    <div class="form-group">
+      <label>Longitude</label>
+      <input type="number" id="qLng" step="0.0001" />
+    </div>
+    <div class="form-group">
+      <label>Emoji</label>
+      <input type="text" id="qEmoji" maxlength="2" />
+    </div>
+    <div class="form-group">
+      <label>Theme</label>
+      <input type="text" id="qTheme" />
+    </div>
+    <div class="form-group">
+      <label>Difficulty (1-5)</label>
+      <input type="number" id="qDifficulty" min="1" max="5" />
+    </div>
+
+    <div class="button-group">
+      <button class="btn btn-primary" onclick="saveQuestion()">Save Question</button>
+      <button class="btn btn-secondary" onclick="closeQuestionModal()">Cancel</button>
+    </div>
+    <div id="questionStatus"></div>
+  </div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(
+  'https://pmxmxfvtnosyyjkiwvim.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
+);
+
+let allQuestions = [];
+let currentQuestionId = null;
+const $ = id => document.getElementById(id);
+
+// INIT
+window.addEventListener('DOMContentLoaded', async () => {
+  $('roundDate').valueAsDate = new Date();
+  await loadQuestions();
+  await loadRound();
+});
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  $(tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// LOAD ALL QUESTIONS
+async function loadQuestions() {
+  try {
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .order('id');
+    
+    if (error) throw error;
+    allQuestions = data || [];
+    renderQuestions();
+    renderQuestionSelector();
+  } catch (e) {
+    console.error('Error loading questions:', e.message);
+  }
+}
+
+function renderQuestions() {
+  const grid = $('questionsGrid');
+  grid.innerHTML = allQuestions.map(q => `
+    <div class="question-card">
+      <h3>${q.emoji} ${q.title}</h3>
+      <p>"${q.clue.substring(0, 80)}..."</p>
+      <div class="question-card-meta">
+        <span class="badge">${q.year}</span>
+        <span class="badge">${q.location}</span>
+        <span class="badge">Diff: ${q.difficulty}</span>
+      </div>
+      <div class="question-card-actions">
+        <button class="btn-sm btn-edit" onclick="editQuestion(${q.id})">Edit</button>
+        <button class="btn-sm btn-delete" onclick="deleteQuestion(${q.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderQuestionSelector() {
+  const selector = $('questionSelector');
+  selector.innerHTML = allQuestions.map(q => `
+    <div class="question-item">
+      <input type="checkbox" id="q${q.id}" onchange="validateSelection()" />
+      <label for="q${q.id}">
+        <span class="question-item-title">${q.emoji} ${q.title}</span>
+        <span class="question-item-meta">${q.year} • ${q.location}</span>
+      </label>
+    </div>
+  `).join('');
+}
+
+function validateSelection() {
+  const checked = document.querySelectorAll('.question-item input:checked').length;
+  const msg = checked === 5 ? '✓ 5 questions selected' : `${checked}/5 selected`;
+  // Could show visual feedback here
+}
+
+// LOAD CURRENT ROUND
+async function loadRound() {
+  try {
+    const { data, error } = await supabase
+      .from('daily_rounds')
+      .select('*')
+      .eq('date', $('roundDate').value)
+      .single();
+    
+    if (data) {
+      $('roundTheme').value = data.theme;
+      data.question_ids.forEach(id => {
+        const checkbox = $(`q${id}`);
+        if (checkbox) checkbox.checked = true;
+      });
+      validateSelection();
+    }
+  } catch (e) {
+    // No round for this date yet, that's fine
+  }
+}
+
+// SAVE ROUND
+async function saveRound() {
+  const selectedIds = Array.from(document.querySelectorAll('.question-item input:checked'))
+    .map(cb => parseInt(cb.id.replace('q', '')));
+  
+  if (selectedIds.length !== 5) {
+    showStatus('roundStatus', 'Please select exactly 5 questions', 'error');
+    return;
+  }
+
+  const date = $('roundDate').value;
+  const theme = $('roundTheme').value || 'Daily Challenge';
+
+  try {
+    const { error } = await supabase
+      .from('daily_rounds')
+      .upsert({
+        date,
+        theme,
+        question_ids: selectedIds,
+        status: 'active'
+      }, { onConflict: 'date' });
+    
+    if (error) throw error;
+    showStatus('roundStatus', 'Round saved successfully! ✓', 'success');
+  } catch (e) {
+    showStatus('roundStatus', 'Error: ' + e.message, 'error');
+  }
+}
+
+// QUESTION MODAL
+function openNewQuestionModal() {
+  currentQuestionId = null;
+  $('qTitle').value = '';
+  $('qClue').value = '';
+  $('qYear').value = '';
+  $('qLocation').value = '';
+  $('qLat').value = '';
+  $('qLng').value = '';
+  $('qEmoji').value = '';
+  $('qTheme').value = '';
+  $('qDifficulty').value = '1';
+  $('questionModal').classList.add('show');
+}
+
+function editQuestion(id) {
+  const q = allQuestions.find(x => x.id === id);
+  currentQuestionId = id;
+  $('qTitle').value = q.title;
+  $('qClue').value = q.clue;
+  $('qYear').value = q.year;
+  $('qLocation').value = q.location;
+  $('qLat').value = q.answer_lat;
+  $('qLng').value = q.answer_lng;
+  $('qEmoji').value = q.emoji || '';
+  $('qTheme').value = q.theme || '';
+  $('qDifficulty').value = q.difficulty || 1;
+  $('questionModal').classList.add('show');
+}
+
+function closeQuestionModal() {
+  $('questionModal').classList.remove('show');
+}
+
+async function saveQuestion() {
+  const q = {
+    title: $('qTitle').value,
+    clue: $('qClue').value,
+    year: $('qYear').value,
+    location: $('qLocation').value,
+    answer_lat: parseFloat($('qLat').value),
+    answer_lng: parseFloat($('qLng').value),
+    emoji: $('qEmoji').value,
+    theme: $('qTheme').value,
+    difficulty: parseInt($('qDifficulty').value)
+  };
+
+  if (!q.title || !q.clue || !q.location || isNaN(q.answer_lat) || isNaN(q.answer_lng)) {
+    showStatus('questionStatus', 'Please fill all required fields', 'error');
+    return;
+  }
+
+  try {
+    let error;
+    if (currentQuestionId) {
+      ({ error } = await supabase.from('questions').update(q).eq('id', currentQuestionId));
+    } else {
+      ({ error } = await supabase.from('questions').insert([q]));
+    }
+    
+    if (error) throw error;
+    await loadQuestions();
+    closeQuestionModal();
+    showStatus('questionStatus', 'Question saved! ✓', 'success');
+  } catch (e) {
+    showStatus('questionStatus', 'Error: ' + e.message, 'error');
+  }
+}
+
+async function deleteQuestion(id) {
+  if (!confirm('Delete this question?')) return;
+  
+  try {
+    const { error } = await supabase.from('questions').delete().eq('id', id);
+    if (error) throw error;
+    await loadQuestions();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function showStatus(elementId, message, type) {
+  const el = $(elementId);
+  el.textContent = message;
+  el.className = `status ${type}`;
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>
