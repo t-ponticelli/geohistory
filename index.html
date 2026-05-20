@@ -289,6 +289,146 @@
     padding: 14px 16px max(env(safe-area-inset-bottom), 16px);
     flex-shrink: 0;
     z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* DAILY DOUBLE BUTTON */
+  .dd-btn {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1a1a1a;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    animation: ddPulse 2s ease-in-out infinite;
+  }
+  .dd-btn:active { transform: scale(0.98); }
+
+  @keyframes ddPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  /* DAILY DOUBLE MODAL */
+  .dd-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .dd-modal.show { display: flex; }
+  .dd-content {
+    background: var(--paper);
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .dd-header { text-align: center; margin-bottom: 20px; }
+  .dd-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+    display: inline-block;
+    animation: ddBounce 1s ease-in-out infinite;
+  }
+  @keyframes ddBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .dd-content h2 {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+  .dd-subtitle {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+  .dd-current {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+  }
+  .dd-current strong {
+    font-family: var(--mono);
+    font-size: 1.3rem;
+    color: var(--usa-red);
+  }
+  .dd-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .dd-input-row input {
+    flex: 1;
+    padding: 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+    font-family: var(--mono);
+    background: white;
+  }
+  .dd-max-btn {
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .dd-quick-bets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .dd-quick-bets button {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 10px 4px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .dd-quick-bets button:hover { background: var(--cream); }
+  .dd-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .dd-buttons button { flex: 1; }
+
+  /* DD active indicator */
+  .dd-active-indicator {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1a1a1a;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-bottom: 10px;
   }
 
   .btn-primary {
@@ -460,30 +600,26 @@
     text-align: center;
   }
 
-  .splash-flag-wrap {
-    width: 220px;
-    height: 130px;
+  .splash-globe-wrap {
+    width: 180px;
+    height: 180px;
     margin-bottom: 18px;
-    perspective: 600px;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
 
-  .betsy-flag {
+  .splash-globe {
     width: 100%;
-    height: auto;
-    border-radius: 3px;
-    box-shadow: 0 8px 24px rgba(0,40,104,0.25);
-    animation: wave 4s ease-in-out infinite;
-    transform-origin: left center;
+    height: 100%;
+    animation: spin 8s linear infinite;
+    filter: drop-shadow(0 8px 24px rgba(0,40,104,0.25));
   }
 
-  @keyframes wave {
-    0%, 100% { transform: rotateY(-8deg) skewY(-1.5deg); }
-    25% { transform: rotateY(4deg) skewY(2deg); }
-    50% { transform: rotateY(-4deg) skewY(-2deg); }
-    75% { transform: rotateY(8deg) skewY(1deg); }
+  @keyframes spin {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
   }
 
   .splash-title {
@@ -680,81 +816,46 @@
   <!-- SPLASH -->
   <div id="splash">
     <div class="splash-top">
-      <div class="splash-flag-wrap">
-        <svg class="betsy-flag" viewBox="0 0 190 100" xmlns="http://www.w3.org/2000/svg">
-          <!-- 13 alternating red/white stripes -->
-          <rect x="0" y="0" width="190" height="100" fill="#bf0a30"/>
-          <g fill="#ffffff">
-            <rect x="0" y="7.7" width="190" height="7.7"/>
-            <rect x="0" y="23.1" width="190" height="7.7"/>
-            <rect x="0" y="38.5" width="190" height="7.7"/>
-            <rect x="0" y="53.8" width="190" height="7.7"/>
-            <rect x="0" y="69.2" width="190" height="7.7"/>
-            <rect x="0" y="84.6" width="190" height="7.7"/>
+      <div class="splash-globe-wrap">
+        <svg class="splash-globe" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Globe background (ocean) -->
+          <circle cx="100" cy="100" r="90" fill="#3b82f6"/>
+          
+          <!-- Continents (simplified) -->
+          <g fill="#16a34a">
+            <!-- North America -->
+            <path d="M 45 70 Q 50 60 60 65 L 75 70 Q 80 80 75 90 L 65 100 Q 55 95 50 85 Z"/>
+            <!-- South America -->
+            <path d="M 70 115 Q 75 110 80 115 L 82 130 Q 80 145 75 155 Q 70 150 68 140 Z"/>
+            <!-- Europe -->
+            <path d="M 100 65 Q 110 60 115 65 L 115 75 Q 110 80 105 78 Z"/>
+            <!-- Africa -->
+            <path d="M 105 85 Q 115 85 120 95 L 122 115 Q 115 130 108 130 Q 100 120 100 105 Z"/>
+            <!-- Asia -->
+            <path d="M 120 65 Q 135 60 150 70 L 155 85 Q 150 95 140 95 L 125 90 Q 118 80 120 70 Z"/>
+            <!-- Australia -->
+            <path d="M 140 130 Q 150 128 155 135 L 153 142 Q 145 144 140 140 Z"/>
           </g>
-          <!-- Blue canton -->
-          <rect x="0" y="0" width="76" height="53.8" fill="#002868"/>
-          <!-- 48 stars in 6x8 grid -->
-          <g fill="#ffffff" id="stars-group">
-            <g transform="translate(38, 26.9)">
-              <!-- Row 1 -->
-              <circle cx="-15" cy="-12" r="1.8"/>
-              <circle cx="-9" cy="-12" r="1.8"/>
-              <circle cx="-3" cy="-12" r="1.8"/>
-              <circle cx="3" cy="-12" r="1.8"/>
-              <circle cx="9" cy="-12" r="1.8"/>
-              <circle cx="15" cy="-12" r="1.8"/>
-              <!-- Row 2 -->
-              <circle cx="-15" cy="-6" r="1.8"/>
-              <circle cx="-9" cy="-6" r="1.8"/>
-              <circle cx="-3" cy="-6" r="1.8"/>
-              <circle cx="3" cy="-6" r="1.8"/>
-              <circle cx="9" cy="-6" r="1.8"/>
-              <circle cx="15" cy="-6" r="1.8"/>
-              <!-- Row 3 -->
-              <circle cx="-15" cy="0" r="1.8"/>
-              <circle cx="-9" cy="0" r="1.8"/>
-              <circle cx="-3" cy="0" r="1.8"/>
-              <circle cx="3" cy="0" r="1.8"/>
-              <circle cx="9" cy="0" r="1.8"/>
-              <circle cx="15" cy="0" r="1.8"/>
-              <!-- Row 4 -->
-              <circle cx="-15" cy="6" r="1.8"/>
-              <circle cx="-9" cy="6" r="1.8"/>
-              <circle cx="-3" cy="6" r="1.8"/>
-              <circle cx="3" cy="6" r="1.8"/>
-              <circle cx="9" cy="6" r="1.8"/>
-              <circle cx="15" cy="6" r="1.8"/>
-              <!-- Row 5 -->
-              <circle cx="-15" cy="12" r="1.8"/>
-              <circle cx="-9" cy="12" r="1.8"/>
-              <circle cx="-3" cy="12" r="1.8"/>
-              <circle cx="3" cy="12" r="1.8"/>
-              <circle cx="9" cy="12" r="1.8"/>
-              <circle cx="15" cy="12" r="1.8"/>
-              <!-- Row 6 -->
-              <circle cx="-15" cy="18" r="1.8"/>
-              <circle cx="-9" cy="18" r="1.8"/>
-              <circle cx="-3" cy="18" r="1.8"/>
-              <circle cx="3" cy="18" r="1.8"/>
-              <circle cx="9" cy="18" r="1.8"/>
-              <circle cx="15" cy="18" r="1.8"/>
-              <!-- Row 7 -->
-              <circle cx="-15" cy="24" r="1.8"/>
-              <circle cx="-9" cy="24" r="1.8"/>
-              <circle cx="-3" cy="24" r="1.8"/>
-              <circle cx="3" cy="24" r="1.8"/>
-              <circle cx="9" cy="24" r="1.8"/>
-              <circle cx="15" cy="24" r="1.8"/>
-              <!-- Row 8 -->
-              <circle cx="-15" cy="30" r="1.8"/>
-              <circle cx="-9" cy="30" r="1.8"/>
-              <circle cx="-3" cy="30" r="1.8"/>
-              <circle cx="3" cy="30" r="1.8"/>
-              <circle cx="9" cy="30" r="1.8"/>
-              <circle cx="15" cy="30" r="1.8"/>
-            </g>
+          
+          <!-- Latitude/longitude grid lines -->
+          <g stroke="#ffffff" stroke-width="0.5" fill="none" opacity="0.3">
+            <ellipse cx="100" cy="100" rx="90" ry="30"/>
+            <ellipse cx="100" cy="100" rx="90" ry="60"/>
+            <ellipse cx="100" cy="100" rx="60" ry="90"/>
+            <ellipse cx="100" cy="100" rx="30" ry="90"/>
+            <line x1="10" y1="100" x2="190" y2="100"/>
+            <line x1="100" y1="10" x2="100" y2="190"/>
           </g>
+          
+          <!-- Highlight (3D effect) -->
+          <circle cx="100" cy="100" r="90" fill="url(#gradient)" opacity="0.3"/>
+          
+          <defs>
+            <radialGradient id="gradient" cx="35%" cy="35%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#000000"/>
+            </radialGradient>
+          </defs>
         </svg>
       </div>
       <h1 class="splash-title">Geo<span>History</span></h1>
@@ -799,7 +900,38 @@
 
   <!-- ACTION BAR -->
   <div id="action-bar">
+    <button class="dd-btn" id="dd-btn" onclick="openDailyDouble()" style="display:none;">⚡ Daily Double</button>
     <button class="btn-primary" id="guess-btn" disabled>Drop a pin to guess</button>
+  </div>
+
+  <!-- DAILY DOUBLE MODAL -->
+  <div id="dd-modal" class="dd-modal">
+    <div class="dd-content">
+      <div class="dd-header">
+        <div class="dd-icon">⚡</div>
+        <h2>Daily Double!</h2>
+        <p class="dd-subtitle">Wager any amount of your accumulated points. If your guess is within <strong>200 miles</strong> of the answer, you double your wager. Otherwise, you lose it.</p>
+      </div>
+      <div class="dd-current">
+        <span>Current Score:</span>
+        <strong id="dd-current-score">0</strong>
+      </div>
+      <label>Your Wager:</label>
+      <div class="dd-input-row">
+        <input type="number" id="dd-wager" min="0" value="0" />
+        <button class="dd-max-btn" onclick="dailyDoubleMax()">MAX</button>
+      </div>
+      <div class="dd-quick-bets">
+        <button onclick="setDDWager(25)">25%</button>
+        <button onclick="setDDWager(50)">50%</button>
+        <button onclick="setDDWager(75)">75%</button>
+        <button onclick="setDDWager(100)">All In</button>
+      </div>
+      <div class="dd-buttons">
+        <button class="btn-secondary" onclick="closeDailyDouble()">Cancel</button>
+        <button class="btn-primary" onclick="confirmDailyDouble()">Lock In Wager</button>
+      </div>
+    </div>
   </div>
 
   <!-- RESULT SHEET -->
@@ -954,6 +1086,11 @@ let guessMarker = null;
 let correctMarker = null;
 let lineSourceAdded = false;
 let currentUserId = null;
+
+// Daily Double state
+let dailyDoubleUsed = false;
+let dailyDoubleActive = false;
+let dailyDoubleWager = 0;
 
 const $ = id => document.getElementById(id);
 
@@ -1127,11 +1264,30 @@ function loadQuestion(idx) {
 
   $('result-sheet').classList.remove('show');
   $('clue-card').classList.remove('collapsed');
-  $('tap-hint').classList.remove('hidden');
+  
+  // Only show tap hint on first question
+  if (idx === 0) {
+    $('tap-hint').classList.remove('hidden');
+  } else {
+    $('tap-hint').classList.add('hidden');
+  }
 
   const btn = $('guess-btn');
   btn.disabled = true;
   btn.textContent = 'Drop a pin to guess';
+
+  // Show daily double button on Q2-Q5 if not used yet
+  const ddBtn = $('dd-btn');
+  if (idx >= 1 && idx <= 4 && !dailyDoubleUsed) {
+    ddBtn.style.display = 'block';
+    ddBtn.textContent = '⚡ Daily Double';
+  } else {
+    ddBtn.style.display = 'none';
+  }
+  
+  // Reset daily double active state for new question
+  dailyDoubleActive = false;
+  dailyDoubleWager = 0;
 
   $('q-tag').textContent = `Q${idx + 1} / 5`;
   $('pts-tag').textContent = `${MAX_POINTS[idx]} pts`;
@@ -1205,11 +1361,31 @@ function submitGuess() {
   const distKm = distanceKm(guessLngLat.lat, guessLngLat.lng, q.answer.lat, q.answer.lng);
   const distMiles = distKm * 0.621371;
   const maxPts = MAX_POINTS[currentQ];
-  const pts = scoreFor(distMiles, maxPts);
+  let pts = scoreFor(distMiles, maxPts);
   const tier = tierFor(distMiles);
 
+  // Apply daily double if active
+  let ddResult = null;
+  if (dailyDoubleActive) {
+    // Win condition: within 200 miles (Elite, Great, or Good tier)
+    const ddWon = distMiles <= 200;
+    if (ddWon) {
+      pts = pts + dailyDoubleWager;
+      ddResult = { won: true, change: dailyDoubleWager };
+    } else {
+      pts = pts - dailyDoubleWager;
+      ddResult = { won: false, change: -dailyDoubleWager };
+    }
+  }
+
   totalScore += pts;
-  breakdown.push({ title: q.title, pts, distMiles: Math.round(distMiles), emoji: q.emoji });
+  breakdown.push({ 
+    title: q.title, 
+    pts, 
+    distMiles: Math.round(distMiles), 
+    emoji: q.emoji,
+    dailyDouble: dailyDoubleActive ? ddResult : null
+  });
 
   // Drop correct marker
   const correctEl = document.createElement('div');
@@ -1251,7 +1427,18 @@ function submitGuess() {
 
   $('res-emoji').textContent = tier.emoji;
   $('res-headline').textContent = tier.name;
-  $('res-sub').textContent = `The answer: ${q.location}`;
+  
+  // Show daily double result if applicable
+  if (ddResult) {
+    if (ddResult.won) {
+      $('res-sub').textContent = `⚡ Daily Double WON! +${ddResult.change} bonus. Answer: ${q.location}`;
+    } else {
+      $('res-sub').textContent = `⚡ Daily Double LOST. -${Math.abs(ddResult.change)} pts. Answer: ${q.location}`;
+    }
+  } else {
+    $('res-sub').textContent = `The answer: ${q.location}`;
+  }
+  
   $('res-pts').textContent = pts;
   $('res-pts').style.color = tier.color;
   $('res-dist').textContent = `${Math.round(distMiles).toLocaleString()} mi`;
@@ -1266,6 +1453,11 @@ function submitGuess() {
 
 function nextQuestion() {
   $('result-sheet').classList.remove('show');
+  
+  // Remove daily double active indicator
+  const indicator = document.querySelector('.dd-active-indicator');
+  if (indicator) indicator.remove();
+  
   currentQ++;
   if (currentQ >= 5) {
     setTimeout(showEndScreen, 300);
@@ -1317,11 +1509,68 @@ function resetGame() {
   breakdown = [];
   guessLngLat = null;
   guessed = false;
+  
+  // Reset daily double state
+  dailyDoubleUsed = false;
+  dailyDoubleActive = false;
+  dailyDoubleWager = 0;
 
   $('end-screen').classList.remove('show');
   $('score-chip').textContent = '0';
 
   loadQuestion(0);
+}
+
+// ─── DAILY DOUBLE FUNCTIONS ───
+function openDailyDouble() {
+  if (dailyDoubleUsed) return;
+  $('dd-current-score').textContent = totalScore;
+  $('dd-wager').value = Math.min(100, totalScore);
+  $('dd-wager').max = totalScore;
+  $('dd-modal').classList.add('show');
+}
+
+function closeDailyDouble() {
+  $('dd-modal').classList.remove('show');
+}
+
+function setDDWager(pct) {
+  const amount = Math.floor(totalScore * (pct / 100));
+  $('dd-wager').value = amount;
+}
+
+function dailyDoubleMax() {
+  $('dd-wager').value = totalScore;
+}
+
+function confirmDailyDouble() {
+  const wager = parseInt($('dd-wager').value);
+  
+  if (isNaN(wager) || wager < 0) {
+    alert('Please enter a valid wager amount');
+    return;
+  }
+  
+  if (wager > totalScore) {
+    alert(`You can only wager up to ${totalScore} points`);
+    return;
+  }
+  
+  dailyDoubleActive = true;
+  dailyDoubleWager = wager;
+  dailyDoubleUsed = true;
+  
+  $('dd-modal').classList.remove('show');
+  $('dd-btn').style.display = 'none';
+  
+  // Show active indicator above guess button
+  const existingIndicator = document.querySelector('.dd-active-indicator');
+  if (existingIndicator) existingIndicator.remove();
+  
+  const indicator = document.createElement('div');
+  indicator.className = 'dd-active-indicator';
+  indicator.innerHTML = `⚡ Daily Double Active — Wagering ${wager} points`;
+  $('action-bar').insertBefore(indicator, $('guess-btn'));
 }
 </script>
 </body>
