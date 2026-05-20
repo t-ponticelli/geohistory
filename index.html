@@ -229,7 +229,13 @@
   #clue-card.collapsed .toggle-btn { transform: rotate(180deg); }
 
   .clue-title {
-    display: none;
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 10px;
+    font-style: italic;
   }
 
   .clue-body {
@@ -602,7 +608,8 @@
   .breakdown-row:last-child { border-bottom: none; }
   .br-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
   .br-emoji { font-size: 1rem; flex-shrink: 0; }
-  .br-title { color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .br-title { color: var(--ink); font-weight: 500; margin-bottom: 2px; }
+  .br-distance { display: block; font-size: 0.75rem; color: var(--ink-soft); }
   .br-pts { font-family: var(--mono); font-size: 0.85rem; color: var(--ink); font-weight: 600; flex-shrink: 0; padding-left: 10px; }
 
   /* ─── Map markers ─── */
@@ -904,24 +911,23 @@ const QUESTIONS = [
 
 const MAX_POINTS = [100, 100, 200, 300, 300];
 
-// Gradient-based scoring system
+// Gradient-based scoring system (5% more forgiving)
 // Elite: 0-25 mi | Great: 25-100 mi | Good: 100-200 mi | Bad: 200-999 mi | None: 1000+ mi
-// Points decrease smoothly within each tier, not just at tier boundaries
 function scoreFor(distMiles, maxPts) {
   let pct;
   
   if (distMiles <= 25) {
-    // Elite: 0-25 mi → 100% down to 80% (smooth gradient)
-    pct = 1.0 - (distMiles / 25) * 0.2;
+    // Elite: 0-25 mi → 105% down to 84%
+    pct = 1.05 - (distMiles / 25) * 0.21;
   } else if (distMiles <= 100) {
-    // Great: 25-100 mi → 80% down to 50% (smooth gradient)
-    pct = 0.8 - ((distMiles - 25) / 75) * 0.3;
+    // Great: 25-100 mi → 84% down to 52.5%
+    pct = 0.84 - ((distMiles - 25) / 75) * 0.315;
   } else if (distMiles <= 200) {
-    // Good: 100-200 mi → 50% down to 20% (smooth gradient)
-    pct = 0.5 - ((distMiles - 100) / 100) * 0.3;
+    // Good: 100-200 mi → 52.5% down to 21%
+    pct = 0.525 - ((distMiles - 100) / 100) * 0.315;
   } else if (distMiles <= 999) {
-    // Bad: 200-999 mi → 20% down to 1% (smooth gradient)
-    pct = 0.2 - ((distMiles - 200) / 799) * 0.19;
+    // Bad: 200-999 mi → 21% down to 1.05%
+    pct = 0.21 - ((distMiles - 200) / 799) * 0.1995;
   } else {
     // None: 1000+ mi → 0 points
     pct = 0;
@@ -1290,7 +1296,10 @@ function showEndScreen() {
     <div class="breakdown-row">
       <div class="br-left">
         <span class="br-emoji">${r.emoji}</span>
-        <span class="br-title">${r.title}</span>
+        <div>
+          <span class="br-title">${r.title}</span>
+          <span class="br-distance">${r.distMiles} mi off</span>
+        </div>
       </div>
       <span class="br-pts">${r.pts} / ${MAX_POINTS[i]}</span>
     </div>
