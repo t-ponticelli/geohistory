@@ -6,607 +6,530 @@
 <title>GeoHistory Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --cream: #fef7ed;
-    --paper: #fffbf3;
-    --ink: #1a1a1a;
-    --ink-soft: #4a4a4a;
-    --border: #e8dfd0;
-    --usa-red: #bf0a30;
-    --usa-blue: #002868;
-    --green: #16a34a;
-    --shadow: 0 4px 12px rgba(0,0,0,0.08);
-  }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: auto; }
   body {
-    background: var(--cream);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: var(--ink);
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
+    background: #fef7ed;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a1a;
     padding: 20px;
+    min-height: 100vh;
   }
+  .container { max-width: 900px; margin: 0 auto; }
 
-  .header {
-    margin-bottom: 32px;
-  }
-  .header h1 {
-    font-size: 2rem;
-    font-weight: 900;
-    margin-bottom: 4px;
-  }
-  .header p {
-    color: var(--ink-soft);
-    font-size: 0.95rem;
-  }
+  h1 { font-size: 1.8rem; margin-bottom: 8px; font-style: italic; }
+  h1 span { color: #bf0a30; }
+  .subtitle { color: #666; margin-bottom: 30px; font-size: 0.9rem; }
 
   .tabs {
     display: flex;
-    gap: 12px;
-    border-bottom: 2px solid var(--border);
-    margin-bottom: 24px;
-  }
-  .tab-btn {
-    background: none;
-    border: none;
-    padding: 12px 20px;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--ink-soft);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
-    margin-bottom: -2px;
-  }
-  .tab-btn.active {
-    color: var(--usa-blue);
-    border-bottom-color: var(--usa-blue);
-  }
-  .tab-btn:hover:not(.active) {
-    color: var(--ink);
-  }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* DAILY ROUND TAB */
-  .round-section {
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
+    gap: 4px;
     margin-bottom: 20px;
-  }
-
-  .form-group {
-    margin-bottom: 16px;
-  }
-  .form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
-  }
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 0.95rem;
-  }
-  .form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-
-  .question-selector {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  .question-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .question-item:last-child { border-bottom: none; }
-  .question-item input[type="checkbox"] {
-    margin-right: 12px;
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-  }
-  .question-item label {
-    flex: 1;
-    cursor: pointer;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .question-item-title {
-    font-weight: 600;
-    color: var(--ink);
-  }
-  .question-item-meta {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    margin-top: 2px;
-  }
-
-  /* QUESTIONS TAB */
-  .questions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .question-card {
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .question-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-    color: var(--ink);
-  }
-  .question-card p {
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    margin-bottom: 8px;
-    line-height: 1.4;
-  }
-  .question-card-meta {
-    display: flex;
-    gap: 8px;
-    font-size: 0.75rem;
-    color: var(--ink-soft);
-    margin-bottom: 12px;
+    border-bottom: 2px solid #e8dfd0;
     flex-wrap: wrap;
   }
-  .badge {
-    background: var(--cream);
-    padding: 4px 8px;
-    border-radius: 4px;
-  }
-  .question-card-actions {
-    display: flex;
-    gap: 8px;
-  }
-  .btn-sm {
-    flex: 1;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-edit {
-    background: var(--usa-blue);
-    color: white;
-  }
-  .btn-edit:hover { opacity: 0.9; }
-  .btn-delete {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-  .btn-delete:hover { background: #fecaca; }
-
-  /* BUTTONS */
-  .btn {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-primary {
-    background: var(--usa-blue);
-    color: white;
-  }
-  .btn-primary:hover { opacity: 0.9; }
-  .btn-secondary {
-    background: var(--paper);
-    color: var(--ink);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover { background: #f5f1e8; }
-
-  .button-group {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-  }
-
-  /* MODAL */
-  .modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal.show { display: flex; }
-  .modal-content {
-    background: var(--paper);
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow);
-  }
-  .modal-header {
-    font-size: 1.3rem;
-    font-weight: 900;
-    margin-bottom: 16px;
-  }
-  .modal-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
+  .tab {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #666;
     cursor: pointer;
-    color: var(--ink-soft);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active { color: #002868; border-bottom-color: #002868; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card {
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
   }
 
-  .status {
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 16px;
-    text-align: center;
+  .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 0; }
+
+  label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.85rem; color: #444; }
+  input, textarea, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e8dfd0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: white;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
     font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
   }
-  .status.success {
-    background: #dcfce7;
-    color: #166534;
+  .btn-primary { background: #002868; color: white; }
+  .btn-danger { background: #fee; color: #c00; border: 1px solid #fcc; }
+  .btn-secondary { background: white; color: #444; border: 1px solid #ddd; }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+  .question-list { display: flex; flex-direction: column; gap: 8px; }
+  .question-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border: 1px solid #e8dfd0;
+    border-radius: 8px;
   }
-  .status.error {
-    background: #fee2e2;
-    color: #991b1b;
+  .question-row .emoji { font-size: 1.4rem; }
+  .question-row .info { flex: 1; min-width: 0; }
+  .question-row .title { font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; }
+  .question-row .meta { font-size: 0.75rem; color: #888; }
+  .question-row .actions { display: flex; gap: 6px; }
+
+  .schedule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .schedule-grid { grid-template-columns: 1fr; } }
+
+  .checkbox-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e8dfd0;
+    border-radius: 8px;
+    background: white;
+    padding: 8px;
   }
-  .status.loading {
-    background: #dbeafe;
-    color: #1e40af;
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+  }
+  .checkbox-item:last-child { border-bottom: none; }
+  .checkbox-item input { width: 18px; height: 18px; flex: 0 0 18px; }
+  .checkbox-item label { margin: 0; cursor: pointer; flex: 1; font-weight: normal; }
+  .checkbox-item .preview { display: block; font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+  .status { padding: 12px; border-radius: 8px; margin-top: 16px; font-weight: 600; }
+  .status.success { background: #d4edda; color: #155724; }
+  .status.error { background: #f8d7da; color: #721c24; }
+  .status.info { background: #d1ecf1; color: #0c5460; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-num { font-size: 2rem; font-weight: 900; color: #002868; }
+  .stat-label { font-size: 0.8rem; color: #666; margin-top: 4px; }
+
+  .selected-count {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #002868;
+    padding: 8px 12px;
+    background: #e3edff;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: inline-block;
   }
 </style>
 </head>
 <body>
+
 <div class="container">
-  <div class="header">
-    <h1>GeoHistory Admin</h1>
-    <p>Manage questions and daily schedule</p>
-  </div>
+  <h1>Geo<span>History</span> Admin</h1>
+  <p class="subtitle">Manage questions, schedule daily rounds, view stats</p>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('today')">Today's Round</button>
-    <button class="tab-btn" onclick="switchTab('alltime')">All Questions</button>
+    <button class="tab active" data-tab="schedule">📅 Schedule</button>
+    <button class="tab" data-tab="questions">📝 Questions</button>
+    <button class="tab" data-tab="stats">📊 Stats</button>
   </div>
 
-  <!-- DAILY ROUND TAB -->
-  <div id="daily" class="tab-content active">
-    <div class="round-section">
-      <h2 style="margin-bottom: 16px;">Set Today's Questions</h2>
-      
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="roundDate" />
+  <div class="section active" id="schedule">
+    <div class="card">
+      <h2 style="margin-bottom: 16px;">Schedule a Daily Round</h2>
+
+      <div class="schedule-grid">
+        <div>
+          <label>Date</label>
+          <input type="date" id="schDate" />
+        </div>
+        <div>
+          <label>Theme</label>
+          <input type="text" id="schTheme" placeholder="e.g., Business Through History" />
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>Theme</label>
-        <input type="text" id="roundTheme" placeholder="e.g., World War II" />
+      <label style="margin-top: 16px;">Select 5 Questions</label>
+      <div class="selected-count" id="selectedCount">0 / 5 selected</div>
+      <div class="checkbox-list" id="schQuestionList">Loading...</div>
+
+      <div class="row" style="margin-top: 16px;">
+        <button class="btn btn-primary" onclick="saveSchedule()">💾 Save Schedule</button>
+        <button class="btn btn-secondary" onclick="loadSchedule()">↻ Load Existing</button>
       </div>
 
-      <div class="form-group">
-        <label>Questions (select 5)</label>
-        <div class="question-selector" id="questionSelector"></div>
-      </div>
-
-      <div class="button-group">
-        <button class="btn btn-primary" onclick="saveRound()">Save Today's Round</button>
-        <button class="btn btn-secondary" onclick="loadRound()">Load Current Round</button>
-      </div>
-
-      <div id="roundStatus"></div>
+      <div id="schStatus"></div>
     </div>
   </div>
 
-  <!-- QUESTIONS TAB -->
-  <div id="questions" class="tab-content">
-    <button class="btn btn-primary" onclick="openNewQuestionModal()" style="margin-bottom: 20px;">+ Add New Question</button>
-    <div class="questions-grid" id="questionsGrid"></div>
-  </div>
-</div>
+  <div class="section" id="questions">
+    <div class="card">
+      <h2 style="margin-bottom: 16px;" id="qFormTitle">Add New Question</h2>
+      <input type="hidden" id="qId" />
 
-<!-- QUESTION EDITOR MODAL -->
-<div id="questionModal" class="modal">
-  <div class="modal-content">
-    <button class="modal-close" onclick="closeQuestionModal()">×</button>
-    <div class="modal-header">Edit Question</div>
-    
-    <div class="form-group">
-      <label>Title</label>
-      <input type="text" id="qTitle" />
-    </div>
-    <div class="form-group">
+      <div class="row">
+        <div>
+          <label>Title (short)</label>
+          <input type="text" id="qTitle" placeholder="e.g., Black Tuesday" />
+        </div>
+        <div>
+          <label>Year</label>
+          <input type="text" id="qYear" placeholder="e.g., 1929" />
+        </div>
+      </div>
+
       <label>Clue</label>
-      <textarea id="qClue"></textarea>
-    </div>
-    <div class="form-group">
-      <label>Year</label>
-      <input type="text" id="qYear" />
-    </div>
-    <div class="form-group">
-      <label>Location</label>
-      <input type="text" id="qLocation" />
-    </div>
-    <div class="form-group">
-      <label>Latitude</label>
-      <input type="number" id="qLat" step="0.0001" />
-    </div>
-    <div class="form-group">
-      <label>Longitude</label>
-      <input type="number" id="qLng" step="0.0001" />
-    </div>
-    <div class="form-group">
-      <label>Emoji</label>
-      <input type="text" id="qEmoji" maxlength="2" />
-    </div>
-    <div class="form-group">
-      <label>Theme</label>
-      <input type="text" id="qTheme" />
-    </div>
-    <div class="form-group">
-      <label>Difficulty (1-5)</label>
-      <input type="number" id="qDifficulty" min="1" max="5" />
+      <textarea id="qClue" placeholder="The October 1929 crash occurred here..."></textarea>
+
+      <div class="row">
+        <div>
+          <label>Location Name</label>
+          <input type="text" id="qLocation" placeholder="e.g., New York, NY" />
+        </div>
+        <div>
+          <label>Emoji</label>
+          <input type="text" id="qEmoji" placeholder="📉" maxlength="2" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Latitude</label>
+          <input type="number" id="qLat" step="0.0001" placeholder="40.7069" />
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input type="number" id="qLng" step="0.0001" placeholder="-74.0111" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Theme</label>
+          <input type="text" id="qTheme" placeholder="e.g., Business Through History" />
+        </div>
+        <div>
+          <label>Difficulty (1-5)</label>
+          <input type="number" id="qDifficulty" min="1" max="5" value="1" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 12px;">
+        <button class="btn btn-primary" onclick="saveQuestion()">💾 Save Question</button>
+        <button class="btn btn-secondary" onclick="clearQuestionForm()">✕ Clear</button>
+      </div>
+
+      <div id="qStatus"></div>
     </div>
 
-    <div class="button-group">
-      <button class="btn btn-primary" onclick="saveQuestion()">Save Question</button>
-      <button class="btn btn-secondary" onclick="closeQuestionModal()">Cancel</button>
+    <div class="card">
+      <h2 style="margin-bottom: 12px;">All Questions (<span id="qCount">0</span>)</h2>
+      <div class="question-list" id="qList">Loading...</div>
     </div>
-    <div id="questionStatus"></div>
+  </div>
+
+  <div class="section" id="stats">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="statUsers">—</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statGames">—</div>
+        <div class="stat-label">Games Played</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statToday">—</div>
+        <div class="stat-label">Played Today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statAvg">—</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom: 12px;">Recent Top Scores</h2>
+      <div id="recentScores">Loading...</div>
+    </div>
   </div>
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
-  'https://pmxmxfvtnosyyjkiwvim.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
-);
+const SUPABASE_URL = 'https://pmxmxfvtnosyyjkiwvim.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c';
 
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allQuestions = [];
-let currentQuestionId = null;
-const $ = id => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
-// INIT
-window.addEventListener('DOMContentLoaded', async () => {
-  $('roundDate').valueAsDate = new Date();
-  await loadQuestions();
-  await loadRound();
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    $(tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'stats') loadStats();
+  });
 });
 
-function switchTab(tab) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-  $(tab).classList.add('active');
-  event.target.classList.add('active');
-}
+window.addEventListener('DOMContentLoaded', () => {
+  $('schDate').value = new Date().toISOString().split('T')[0];
+  loadQuestions();
+});
 
-// LOAD ALL QUESTIONS
 async function loadQuestions() {
-  try {
-    const { data, error } = await supabase
-      .from('questions')
-      .select('*')
-      .order('id');
-    
-    if (error) throw error;
-    allQuestions = data || [];
-    renderQuestions();
-    renderQuestionSelector();
-  } catch (e) {
-    console.error('Error loading questions:', e.message);
-  }
-}
-
-function renderQuestions() {
-  const grid = $('questionsGrid');
-  grid.innerHTML = allQuestions.map(q => `
-    <div class="question-card">
-      <h3>${q.emoji} ${q.title}</h3>
-      <p>"${q.clue.substring(0, 80)}..."</p>
-      <div class="question-card-meta">
-        <span class="badge">${q.year}</span>
-        <span class="badge">${q.location}</span>
-        <span class="badge">Diff: ${q.difficulty}</span>
-      </div>
-      <div class="question-card-actions">
-        <button class="btn-sm btn-edit" onclick="editQuestion(${q.id})">Edit</button>
-        <button class="btn-sm btn-delete" onclick="deleteQuestion(${q.id})">Delete</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderQuestionSelector() {
-  const selector = $('questionSelector');
-  selector.innerHTML = allQuestions.map(q => `
-    <div class="question-item">
-      <input type="checkbox" id="q${q.id}" onchange="validateSelection()" />
-      <label for="q${q.id}">
-        <span class="question-item-title">${q.emoji} ${q.title}</span>
-        <span class="question-item-meta">${q.year} • ${q.location}</span>
-      </label>
-    </div>
-  `).join('');
-}
-
-function validateSelection() {
-  const checked = document.querySelectorAll('.question-item input:checked').length;
-  const msg = checked === 5 ? '✓ 5 questions selected' : `${checked}/5 selected`;
-  // Could show visual feedback here
-}
-
-// LOAD CURRENT ROUND
-async function loadRound() {
-  try {
-    const { data, error } = await supabase
-      .from('daily_rounds')
-      .select('*')
-      .eq('date', $('roundDate').value)
-      .single();
-    
-    if (data) {
-      $('roundTheme').value = data.theme;
-      data.question_ids.forEach(id => {
-        const checkbox = $(`q${id}`);
-        if (checkbox) checkbox.checked = true;
-      });
-      validateSelection();
-    }
-  } catch (e) {
-    // No round for this date yet, that's fine
-  }
-}
-
-// SAVE ROUND
-async function saveRound() {
-  const selectedIds = Array.from(document.querySelectorAll('.question-item input:checked'))
-    .map(cb => parseInt(cb.id.replace('q', '')));
-  
-  if (selectedIds.length !== 5) {
-    showStatus('roundStatus', 'Please select exactly 5 questions', 'error');
+  const { data, error } = await sb.from('questions').select('*').order('id', { ascending: false });
+  if (error) {
+    $('qList').innerHTML = '<p style="color:#c00;">Error: ' + error.message + '</p>';
     return;
   }
-
-  const date = $('roundDate').value;
-  const theme = $('roundTheme').value || 'Daily Challenge';
-
-  try {
-    const { error } = await supabase
-      .from('daily_rounds')
-      .upsert({
-        date,
-        theme,
-        question_ids: selectedIds,
-        status: 'active'
-      }, { onConflict: 'date' });
-    
-    if (error) throw error;
-    showStatus('roundStatus', 'Round saved successfully! ✓', 'success');
-  } catch (e) {
-    showStatus('roundStatus', 'Error: ' + e.message, 'error');
-  }
+  allQuestions = data || [];
+  renderQuestionList();
+  renderScheduleCheckboxes();
+  $('qCount').textContent = allQuestions.length;
 }
 
-// QUESTION MODAL
-function openNewQuestionModal() {
-  currentQuestionId = null;
-  $('qTitle').value = '';
-  $('qClue').value = '';
-  $('qYear').value = '';
-  $('qLocation').value = '';
-  $('qLat').value = '';
-  $('qLng').value = '';
-  $('qEmoji').value = '';
-  $('qTheme').value = '';
-  $('qDifficulty').value = '1';
-  $('questionModal').classList.add('show');
+function renderQuestionList() {
+  if (allQuestions.length === 0) {
+    $('qList').innerHTML = '<p style="color:#888;">No questions yet. Add one above.</p>';
+    return;
+  }
+  $('qList').innerHTML = allQuestions.map(q => `
+    <div class="question-row">
+      <div class="emoji">${q.emoji || '📍'}</div>
+      <div class="info">
+        <div class="title">${escapeHtml(q.title)}</div>
+        <div class="meta">${escapeHtml(q.location)} • ${q.year} • ${escapeHtml(q.theme || 'No theme')}</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary btn-sm" onclick="editQuestion(${q.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})">Delete</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 function editQuestion(id) {
   const q = allQuestions.find(x => x.id === id);
-  currentQuestionId = id;
+  if (!q) return;
+  $('qId').value = q.id;
   $('qTitle').value = q.title;
-  $('qClue').value = q.clue;
   $('qYear').value = q.year;
+  $('qClue').value = q.clue;
   $('qLocation').value = q.location;
+  $('qEmoji').value = q.emoji || '';
   $('qLat').value = q.answer_lat;
   $('qLng').value = q.answer_lng;
-  $('qEmoji').value = q.emoji || '';
   $('qTheme').value = q.theme || '';
   $('qDifficulty').value = q.difficulty || 1;
-  $('questionModal').classList.add('show');
+  $('qFormTitle').textContent = 'Edit Question #' + q.id;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function closeQuestionModal() {
-  $('questionModal').classList.remove('show');
+function clearQuestionForm() {
+  ['qId','qTitle','qYear','qClue','qLocation','qEmoji','qLat','qLng','qTheme'].forEach(id => $(id).value = '');
+  $('qDifficulty').value = 1;
+  $('qFormTitle').textContent = 'Add New Question';
+  $('qStatus').innerHTML = '';
 }
 
 async function saveQuestion() {
-  const q = {
-    title: $('qTitle').value,
-    clue: $('qClue').value,
-    year: $('qYear').value,
-    location: $('qLocation').value,
+  const id = $('qId').value;
+  const data = {
+    title: $('qTitle').value.trim(),
+    year: $('qYear').value.trim(),
+    clue: $('qClue').value.trim(),
+    location: $('qLocation').value.trim(),
+    emoji: $('qEmoji').value.trim() || '📍',
     answer_lat: parseFloat($('qLat').value),
     answer_lng: parseFloat($('qLng').value),
-    emoji: $('qEmoji').value,
-    theme: $('qTheme').value,
-    difficulty: parseInt($('qDifficulty').value)
+    theme: $('qTheme').value.trim(),
+    difficulty: parseInt($('qDifficulty').value) || 1
   };
 
-  if (!q.title || !q.clue || !q.location || isNaN(q.answer_lat) || isNaN(q.answer_lng)) {
-    showStatus('questionStatus', 'Please fill all required fields', 'error');
+  if (!data.title || !data.clue || !data.location || isNaN(data.answer_lat) || isNaN(data.answer_lng)) {
+    showStatus('qStatus', 'Please fill in title, clue, location, and coordinates.', 'error');
     return;
   }
 
-  try {
-    let error;
-    if (currentQuestionId) {
-      ({ error } = await supabase.from('questions').update(q).eq('id', currentQuestionId));
-    } else {
-      ({ error } = await supabase.from('questions').insert([q]));
-    }
-    
-    if (error) throw error;
-    await loadQuestions();
-    closeQuestionModal();
-    showStatus('questionStatus', 'Question saved! ✓', 'success');
-  } catch (e) {
-    showStatus('questionStatus', 'Error: ' + e.message, 'error');
+  let result;
+  if (id) {
+    result = await sb.from('questions').update(data).eq('id', id);
+  } else {
+    result = await sb.from('questions').insert(data);
+  }
+
+  if (result.error) {
+    showStatus('qStatus', 'Error: ' + result.error.message, 'error');
+  } else {
+    showStatus('qStatus', id ? 'Question updated!' : 'Question added!', 'success');
+    clearQuestionForm();
+    loadQuestions();
   }
 }
 
 async function deleteQuestion(id) {
-  if (!confirm('Delete this question?')) return;
-  
-  try {
-    const { error } = await supabase.from('questions').delete().eq('id', id);
-    if (error) throw error;
-    await loadQuestions();
-  } catch (e) {
-    alert('Error: ' + e.message);
+  if (!confirm('Delete this question? This cannot be undone.')) return;
+  const { error } = await sb.from('questions').delete().eq('id', id);
+  if (error) alert('Error: ' + error.message);
+  else loadQuestions();
+}
+
+function renderScheduleCheckboxes() {
+  if (allQuestions.length === 0) {
+    $('schQuestionList').innerHTML = '<p style="padding:12px;color:#888;">No questions to schedule. Add some first.</p>';
+    return;
+  }
+  $('schQuestionList').innerHTML = allQuestions.map(q => `
+    <div class="checkbox-item">
+      <input type="checkbox" id="sch_${q.id}" data-qid="${q.id}" onchange="updateSelectedCount()" />
+      <label for="sch_${q.id}">
+        ${q.emoji} <strong>${escapeHtml(q.title)}</strong> • ${escapeHtml(q.location)}
+        <span class="preview">${escapeHtml(q.clue.substring(0, 80))}...</span>
+      </label>
+    </div>
+  `).join('');
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const count = document.querySelectorAll('#schQuestionList input:checked').length;
+  $('selectedCount').textContent = `${count} / 5 selected`;
+  $('selectedCount').style.background = count === 5 ? '#d4edda' : '#e3edff';
+  $('selectedCount').style.color = count === 5 ? '#155724' : '#002868';
+}
+
+async function loadSchedule() {
+  const date = $('schDate').value;
+  const { data, error } = await sb.from('daily_rounds').select('*').eq('date', date).maybeSingle();
+  if (error) {
+    showStatus('schStatus', 'Error: ' + error.message, 'error');
+    return;
+  }
+  if (!data) {
+    showStatus('schStatus', 'No round scheduled for this date yet.', 'info');
+    document.querySelectorAll('#schQuestionList input').forEach(cb => cb.checked = false);
+    $('schTheme').value = '';
+    updateSelectedCount();
+    return;
+  }
+  $('schTheme').value = data.theme;
+  document.querySelectorAll('#schQuestionList input').forEach(cb => {
+    cb.checked = data.question_ids.includes(parseInt(cb.dataset.qid));
+  });
+  updateSelectedCount();
+  showStatus('schStatus', 'Loaded schedule for ' + date, 'success');
+}
+
+async function saveSchedule() {
+  const date = $('schDate').value;
+  const theme = $('schTheme').value.trim();
+  const selectedIds = Array.from(document.querySelectorAll('#schQuestionList input:checked'))
+    .map(cb => parseInt(cb.dataset.qid));
+
+  if (!date) return showStatus('schStatus', 'Please select a date.', 'error');
+  if (!theme) return showStatus('schStatus', 'Please enter a theme.', 'error');
+  if (selectedIds.length !== 5) return showStatus('schStatus', `Please select exactly 5 questions (currently ${selectedIds.length}).`, 'error');
+
+  const { error } = await sb.from('daily_rounds').upsert({
+    date, theme, question_ids: selectedIds, status: 'active'
+  }, { onConflict: 'date' });
+
+  if (error) showStatus('schStatus', 'Error: ' + error.message, 'error');
+  else showStatus('schStatus', `✅ Schedule saved for ${date}!`, 'success');
+}
+
+async function loadStats() {
+  const { count: userCount } = await sb.from('users').select('*', { count: 'exact', head: true });
+  $('statUsers').textContent = userCount || 0;
+
+  const { count: gameCount } = await sb.from('scores').select('*', { count: 'exact', head: true });
+  $('statGames').textContent = gameCount || 0;
+
+  const today = new Date().toISOString().split('T')[0];
+  const { count: todayCount } = await sb.from('scores').select('*', { count: 'exact', head: true }).eq('date', today);
+  $('statToday').textContent = todayCount || 0;
+
+  const { data: scores } = await sb.from('scores').select('total_score');
+  if (scores && scores.length > 0) {
+    const avg = scores.reduce((a, s) => a + s.total_score, 0) / scores.length;
+    $('statAvg').textContent = Math.round(avg);
+  } else {
+    $('statAvg').textContent = 0;
+  }
+
+  const { data: topScores } = await sb.from('scores')
+    .select('username, total_score, date, theme')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (topScores && topScores.length > 0) {
+    $('recentScores').innerHTML = `
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:2px solid #e8dfd0;">
+            <th style="text-align:left;padding:8px;font-size:0.85rem;">Player</th>
+            <th style="text-align:left;padding:8px;font-size:0.85rem;">Date</th>
+            <th style="text-align:left;padding:8px;font-size:0.85rem;">Theme</th>
+            <th style="text-align:right;padding:8px;font-size:0.85rem;">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${topScores.map(s => `
+            <tr style="border-bottom:1px solid #f0f0f0;">
+              <td style="padding:8px;font-size:0.9rem;">${escapeHtml(s.username)}</td>
+              <td style="padding:8px;font-size:0.85rem;color:#888;">${s.date}</td>
+              <td style="padding:8px;font-size:0.85rem;color:#888;">${escapeHtml(s.theme || '-')}</td>
+              <td style="padding:8px;text-align:right;font-weight:600;">${s.total_score}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    $('recentScores').innerHTML = '<p style="color:#888;">No scores yet.</p>';
   }
 }
 
-function showStatus(elementId, message, type) {
-  const el = $(elementId);
-  el.textContent = message;
-  el.className = `status ${type}`;
-  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+function showStatus(id, msg, type) {
+  $(id).innerHTML = `<div class="status ${type}">${msg}</div>`;
+  setTimeout(() => { $(id).innerHTML = ''; }, 4000);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 </script>
 </body>
