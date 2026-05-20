@@ -835,12 +835,26 @@
       <div class="end-rank" id="end-rank"></div>
     </div>
     <div class="breakdown" id="breakdown"></div>
-    <button class="btn-primary" onclick="resetGame()">Play Again</button>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <button class="btn-primary" onclick="resetGame()">Play Again</button>
+      <button class="btn-secondary" onclick="shareScore()">Share Score 📤</button>
+      <button class="btn-secondary" onclick="viewLeaderboard()">View Leaderboard 🏅</button>
+    </div>
   </div>
 
 </div>
 
 <script>
+// Initialize user ID on page load
+(function initUser() {
+  let userId = localStorage.getItem('geo_user_id');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).slice(2, 11);
+    localStorage.setItem('geo_user_id', userId);
+  }
+  window.currentUserId = userId;
+})();
+
 // ═══════════════════════════════════════════════════════════════════════
 // GAME DATA
 // ═══════════════════════════════════════════════════════════════════════
@@ -920,6 +934,7 @@ let map;
 let guessMarker = null;
 let correctMarker = null;
 let lineSourceAdded = false;
+let currentUserId = null;
 
 const $ = id => document.getElementById(id);
 
@@ -1034,8 +1049,42 @@ function initMap() {
 // GAME
 // ═══════════════════════════════════════════════════════════════════════
 
-function startGame() {
+async function startGame() {
   $('splash').style.display = 'none';
+  
+  // Fetch today's round from Supabase
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: round, error } = await supabaseClient
+      .from('daily_rounds')
+      .select('question_ids')
+      .eq('date', today)
+      .single();
+    
+    if (error || !round) {
+      console.error('No round found for today');
+      return;
+    }
+
+    // Fetch the actual questions
+    const { data: questions } = await supabaseClient
+      .from('questions')
+      .select('*')
+      .in('id', round.question_ids);
+    
+    // Map to local format
+    QUESTIONS = questions.map(q => ({
+      year: q.year,
+      title: q.title,
+      clue: q.clue,
+      answer: { lat: q.answer_lat, lng: q.answer_lng },
+      location: q.location,
+      emoji: q.emoji
+    }));
+  } catch (e) {
+    console.error('Error loading questions:', e);
+  }
+
   initMap();
   loadQuestion(0);
 }
@@ -1116,8 +1165,15 @@ $('guess-btn').addEventListener('click', () => {
 function distanceKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
   const toRad = d => d * Math.PI / 180;
+  
+  // Handle dateline: take shortest path across ±180°
+  let dLng = lng2 - lng1;
+  if (dLng > 180) dLng -= 360;
+  if (dLng < -180) dLng += 360;
+  
   const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
+  dLng = toRad(dLng);
+  
   const a = Math.sin(dLat/2)**2 +
             Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
             Math.sin(dLng/2)**2;
@@ -1228,6 +1284,9 @@ function showEndScreen() {
   `).join('');
 
   $('end-screen').classList.add('show');
+  
+  // Save score to database
+  saveScore(totalScore);
 }
 
 function resetGame() {
@@ -1245,3 +1304,40 @@ function resetGame() {
 </script>
 </body>
 </html>
+
+// Save score to Supabase
+async function saveScore(finalScore) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Save individual question scores
+    for (let i = 0; i < breakdown.length; i++) {
+      const b = breakdown[i];
+      const q = QUESTIONS[i];
+      
+      await supabaseClient.from('scores').insert({
+        user_id: window.currentUserId,
+        date: today,
+        question_id: i,
+        question_title: q.title,
+        points: b.pts
+      });
+    }
+  } catch (e) {
+    console.error('Error saving score:', e);
+  }
+}
+
+// Share score on Twitter
+function shareScore() {
+  const score = parseInt($('final-score').textContent);
+  const maxScore = 1000;
+  const text = `I scored ${score}/${maxScore} on GeoHistory! Can you beat my score? 🌍📍`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`;
+  window.open(url, '_blank');
+}
+
+// Go to leaderboard
+function viewLeaderboard() {
+  window.location.href = '/leaderboard.html';
+}
