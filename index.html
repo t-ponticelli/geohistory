@@ -748,7 +748,7 @@
     transition: color 0.3s, text-shadow 0.3s;
   }
   .end-score-num.tier-red { color: #bf0a30; }
-  .end-score-num.tier-yellow { color: #d97706; }
+  .end-score-num.tier-yellow { color: #eab308; }
   .end-score-num.tier-green { color: #16a34a; }
   .end-score-num.tier-platinum {
     color: #e5e7eb;
@@ -919,7 +919,7 @@
         <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">25-100 mi</span></div>
         <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">100-200 mi</span></div>
         <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">200-999 mi</span></div>
-        <div class="tier-row"><span class="tier-name">💀 None</span><span class="tier-range">1000+ mi</span></div>
+        <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">1000+ mi</span></div>
       </div>
     </div>
     <button class="btn-primary" onclick="startGame()">Start Game</button>
@@ -1129,7 +1129,7 @@ function tierFor(distMiles) {
   if (distMiles <= 100) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
   if (distMiles <= 200) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
   if (distMiles <= 999) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
-  return { name: 'None', emoji: '💀', color: '#dc2626' };
+  return { name: 'Miss', emoji: '💀', color: '#dc2626' };
 }
 
 let currentQ = 0;
