@@ -667,6 +667,34 @@
     flex-shrink: 0;
   }
 
+  .scoring-tiers {
+    width: 100%;
+    max-width: 320px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-top: 14px;
+  }
+  .tier-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .tier-row:last-child { border-bottom: none; }
+  .tier-name {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .tier-range {
+    font-family: var(--mono);
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+  }
+
   /* ─── END SCREEN ─── */
   #end-screen {
     position: absolute;
@@ -712,7 +740,23 @@
     font-weight: 900;
     font-size: 4.5rem;
     line-height: 1;
-    color: var(--usa-red);
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+  .end-score-num.tier-red { color: #bf0a30; }
+  .end-score-num.tier-yellow { color: #d97706; }
+  .end-score-num.tier-green { color: #16a34a; }
+  .end-score-num.tier-platinum {
+    color: #e5e7eb;
+    background: linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e5e7eb 50%, #b8b8b8 75%, #d4d4d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    animation: platinumShine 3s ease-in-out infinite;
+  }
+  @keyframes platinumShine {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
   }
   .end-score-max {
     font-family: var(--mono);
@@ -863,7 +907,14 @@
       <div class="splash-rules">
         <div class="rule"><span class="rule-icon">📜</span><span>5 historical events, increasing in difficulty</span></div>
         <div class="rule"><span class="rule-icon">📍</span><span>Tap the map to drop your pin</span></div>
-        <div class="rule"><span class="rule-icon">🎯</span><span>Score tiers: Elite · Excellent · Good · Okay · Miss</span></div>
+        <div class="rule"><span class="rule-icon">⚡</span><span>One random Daily Double per round</span></div>
+      </div>
+      <div class="scoring-tiers">
+        <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-25 mi</span></div>
+        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">25-100 mi</span></div>
+        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">100-200 mi</span></div>
+        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">200-999 mi</span></div>
+        <div class="tier-row"><span class="tier-name">💀 None</span><span class="tier-range">1000+ mi</span></div>
       </div>
     </div>
     <button class="btn-primary" onclick="startGame()">Start Game</button>
@@ -1091,6 +1142,7 @@ let currentUserId = null;
 let dailyDoubleUsed = false;
 let dailyDoubleActive = false;
 let dailyDoubleWager = 0;
+let dailyDoubleQuestion = -1; // Which question gets the daily double (set at game start)
 
 const $ = id => document.getElementById(id);
 
@@ -1208,6 +1260,10 @@ function initMap() {
 async function startGame() {
   $('splash').style.display = 'none';
   
+  // Randomize which question gets the daily double (Q2-Q5, i.e., index 1-4)
+  dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
+  console.log('Daily double scheduled for Q' + (dailyDoubleQuestion + 1));
+  
   // Fetch today's round from Supabase
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -1276,11 +1332,11 @@ function loadQuestion(idx) {
   btn.disabled = true;
   btn.textContent = 'Drop a pin to guess';
 
-  // Show daily double button on Q2-Q5 if not used yet
+  // Show daily double button only on the randomized question (Q2-Q5)
   const ddBtn = $('dd-btn');
-  if (idx >= 1 && idx <= 4 && !dailyDoubleUsed) {
+  if (idx === dailyDoubleQuestion && !dailyDoubleUsed) {
     ddBtn.style.display = 'block';
-    ddBtn.textContent = '⚡ Daily Double';
+    ddBtn.textContent = '⚡ Daily Double Available!';
   } else {
     ddBtn.style.display = 'none';
   }
@@ -1471,6 +1527,19 @@ function showEndScreen() {
   const pct = totalScore / maxTotal;
   $('final-score').textContent = totalScore;
   $('final-max').textContent = `out of ${maxTotal} possible`;
+  
+  // Apply color tier based on absolute score
+  const scoreEl = $('final-score');
+  scoreEl.classList.remove('tier-red', 'tier-yellow', 'tier-green', 'tier-platinum');
+  if (totalScore >= 1000) {
+    scoreEl.classList.add('tier-platinum');
+  } else if (totalScore >= 701) {
+    scoreEl.classList.add('tier-green');
+  } else if (totalScore >= 401) {
+    scoreEl.classList.add('tier-yellow');
+  } else {
+    scoreEl.classList.add('tier-red');
+  }
 
   let rank, rankEmoji;
   if (pct >= 0.85) { rank = 'Historian Supreme'; rankEmoji = '🏆'; }
@@ -1510,10 +1579,11 @@ function resetGame() {
   guessLngLat = null;
   guessed = false;
   
-  // Reset daily double state
+  // Reset daily double state and re-randomize position
   dailyDoubleUsed = false;
   dailyDoubleActive = false;
   dailyDoubleWager = 0;
+  dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
 
   $('end-screen').classList.remove('show');
   $('score-chip').textContent = '0';
