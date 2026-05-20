@@ -751,7 +751,7 @@
         </svg>
       </div>
       <h1 class="splash-title">Geo<span>History</span></h1>
-      <p class="splash-sub">Today's theme: <strong>World War II</strong>. Read a clue, drop your pin where it happened.</p>
+      <p class="splash-sub">Today's theme: <strong>Business Through History</strong>. Read a clue, drop your pin where it happened.</p>
       <div class="splash-rules">
         <div class="rule"><span class="rule-icon">📜</span><span>5 historical events, increasing in difficulty</span></div>
         <div class="rule"><span class="rule-icon">📍</span><span>Tap the map to drop your pin</span></div>
@@ -861,68 +861,81 @@
 
 const QUESTIONS = [
   {
-    year: "1941",
-    title: "Pearl Harbor",
-    clue: "Site of the December 1941 surprise attack—a day that will live in infamy—that brought the US into WWII.",
-    answer: { lat: 21.3587, lng: -157.9496 },
-    location: "Pearl Harbor, Hawaii",
-    emoji: "💣"
+    year: "1971",
+    title: "Hello world",
+    clue: "The first microprocessor was designed and built in this 'valley' in 1971, sparking the digital revolution.",
+    answer: { lat: 37.3544, lng: -121.9692 },
+    location: "Santa Clara, CA",
+    emoji: "💻"
   },
   {
-    year: "1945",
-    title: "Nagasaki",
-    clue: "The second and final atomic bomb was dropped here on August 9, 1945.",
-    answer: { lat: 32.7487, lng: 129.8781 },
-    location: "Nagasaki, Japan",
-    emoji: "☢️"
+    year: "1929",
+    title: "Black Tuesday",
+    clue: "The October 1929 crash occurred here, triggering a rapid banking collapse and the Great Depression.",
+    answer: { lat: 40.7069, lng: -74.0111 },
+    location: "New York, NY",
+    emoji: "📉"
   },
   {
-    year: "1942",
-    title: "Midway",
-    clue: "Turning point naval battle where the US destroyed four Japanese aircraft carriers in June 1942.",
-    answer: { lat: 28.2062, lng: -177.3629 },
-    location: "Midway Atoll",
-    emoji: "⚓"
+    year: "1440",
+    title: "Mass media",
+    clue: "Gutenberg's printing press (c. 1440) revolutionized mass production of books from this Rhineland capital.",
+    answer: { lat: 49.9929, lng: 8.2473 },
+    location: "Mainz, Germany",
+    emoji: "🖨️"
   },
   {
-    year: "1944",
-    title: "Bastogne",
-    clue: "Key position defended by US forces during the Battle of the Bulge winter offensive of 1944.",
-    answer: { lat: 50.0024, lng: 5.7116 },
-    location: "Bastogne, Belgium",
-    emoji: "❄️"
+    year: "1324",
+    title: "The richest man in history",
+    clue: "Mansa Musa, who once gave away so much gold he destabilized Egypt's economy, ran his empire from this ancient African capital.",
+    answer: { lat: 16.7735, lng: -3.0061 },
+    location: "Timbuktu, Mali",
+    emoji: "👑"
   },
   {
-    year: "1942",
-    title: "Casablanca",
-    clue: "Operation Torch: This 1942 amphibious assault preceded D-Day by nearly two years as America's first major WWII landing.",
-    answer: { lat: 33.5731, lng: -7.5898 },
-    location: "Casablanca, Morocco",
-    emoji: "🏖️"
+    year: "1602",
+    title: "The world's first mega-corporation",
+    clue: "The Dutch East India Company (c. 1602) was estimated to be worth $10 trillion, employing 50,000+ people, headquartered in this Indian Ocean trade hub.",
+    answer: { lat: -6.1944, lng: 106.8229 },
+    location: "Jakarta, Indonesia",
+    emoji: "🏢"
   }
 ];
 
 const MAX_POINTS = [100, 100, 200, 300, 300];
 
-// Mile-based scoring tiers. Each tier = fraction of MAX_POINTS for that question.
-// Elite: 0-5 mi → 100% | Excellent: 5-50 mi → 80% | Good: 50-150 mi → 50%
-// Okay: 150-300 mi → 25% | Miss: >300 mi → 0%
+// Gradient-based scoring system
+// Elite: 0-25 mi | Great: 25-100 mi | Good: 100-200 mi | Bad: 200-999 mi | None: 1000+ mi
+// Points decrease smoothly within each tier, not just at tier boundaries
 function scoreFor(distMiles, maxPts) {
   let pct;
-  if (distMiles <= 5) pct = 1.0;
-  else if (distMiles <= 50) pct = 0.8;
-  else if (distMiles <= 150) pct = 0.5;
-  else if (distMiles <= 300) pct = 0.25;
-  else pct = 0;
-  return Math.round(maxPts * pct);
+  
+  if (distMiles <= 25) {
+    // Elite: 0-25 mi → 100% down to 80% (smooth gradient)
+    pct = 1.0 - (distMiles / 25) * 0.2;
+  } else if (distMiles <= 100) {
+    // Great: 25-100 mi → 80% down to 50% (smooth gradient)
+    pct = 0.8 - ((distMiles - 25) / 75) * 0.3;
+  } else if (distMiles <= 200) {
+    // Good: 100-200 mi → 50% down to 20% (smooth gradient)
+    pct = 0.5 - ((distMiles - 100) / 100) * 0.3;
+  } else if (distMiles <= 999) {
+    // Bad: 200-999 mi → 20% down to 1% (smooth gradient)
+    pct = 0.2 - ((distMiles - 200) / 799) * 0.19;
+  } else {
+    // None: 1000+ mi → 0 points
+    pct = 0;
+  }
+  
+  return Math.round(maxPts * Math.max(pct, 0));
 }
 
 function tierFor(distMiles) {
-  if (distMiles <= 5) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
-  if (distMiles <= 50) return { name: 'Excellent', emoji: '🔥', color: '#16a34a' };
-  if (distMiles <= 150) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
-  if (distMiles <= 300) return { name: 'Okay', emoji: '😅', color: '#ff7a45' };
-  return { name: 'Miss', emoji: '💀', color: '#dc2626' };
+  if (distMiles <= 25) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
+  if (distMiles <= 100) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
+  if (distMiles <= 200) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
+  if (distMiles <= 999) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
+  return { name: 'None', emoji: '💀', color: '#dc2626' };
 }
 
 let currentQ = 0;
