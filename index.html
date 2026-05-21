@@ -873,11 +873,27 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 0;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--border);
     font-size: 0.85rem;
+    border-radius: 8px;
+    margin: 0 -12px;
   }
   .breakdown-row:last-child { border-bottom: none; }
+  
+  .breakdown-row.is-daily-double {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
+    border: 1px solid #fbbf24;
+    border-bottom: 1px solid #fbbf24;
+    margin: 4px -12px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  }
+  .br-dd-icon {
+    color: #f59e0b;
+    font-size: 0.9rem;
+    margin-left: 4px;
+  }
+  
   .br-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
   .br-emoji { font-size: 1rem; flex-shrink: 0; }
   .br-title { color: var(--ink); font-weight: 500; margin-bottom: 2px; }
@@ -1119,7 +1135,7 @@
     </div>
     <div class="end-score-card">
       <div class="end-score-num" id="final-score">0</div>
-      <div class="end-score-max" id="final-max">out of 1000</div>
+      <div class="end-score-max" id="final-max" style="display:none;"></div>
       <div class="end-rank" id="end-rank"></div>
     </div>
     <div class="breakdown" id="breakdown"></div>
@@ -1687,7 +1703,6 @@ function showEndScreen() {
   const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
   const pct = totalScore / maxTotal;
   $('final-score').textContent = totalScore;
-  $('final-max').textContent = `out of ${maxTotal} possible`;
   
   // Apply color tier based on absolute score
   const scoreEl = $('final-score');
@@ -1714,18 +1729,22 @@ function showEndScreen() {
   $('end-rank').textContent = `${Math.round(pct * 100)}% accuracy`;
 
   const br = $('breakdown');
-  br.innerHTML = breakdown.map((r, i) => `
-    <div class="breakdown-row">
+  br.innerHTML = breakdown.map((r, i) => {
+    const isDD = r.dailyDouble !== null && r.dailyDouble !== undefined;
+    const ddIcon = isDD ? '<span class="br-dd-icon">⚡</span>' : '';
+    return `
+    <div class="breakdown-row ${isDD ? 'is-daily-double' : ''}">
       <div class="br-left">
         <span class="br-emoji">${r.emoji}</span>
         <div>
-          <span class="br-title">${r.title}</span>
+          <span class="br-title">${r.title} ${ddIcon}</span>
           <span class="br-distance">${r.distMiles} mi off</span>
         </div>
       </div>
-      <span class="br-pts">${r.pts} / ${MAX_POINTS[i]}</span>
+      <span class="br-pts">${r.pts}</span>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
   $('end-screen').classList.add('show');
   
@@ -1803,9 +1822,6 @@ function confirmDailyDouble() {
   indicator.innerHTML = `⚡ Daily Double Active — Wagering ${wager} points`;
   $('action-bar').insertBefore(indicator, $('guess-btn'));
 }
-</script>
-</body>
-</html>
 
 // Save score to Supabase
 async function saveScore(finalScore) {
@@ -1944,3 +1960,6 @@ function showShareToast(message) {
 function viewLeaderboard() {
   window.location.href = '/leaderboard.html';
 }
+</script>
+</body>
+</html>
