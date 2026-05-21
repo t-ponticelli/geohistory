@@ -1833,10 +1833,111 @@ async function saveScore(finalScore) {
 // Share score on Twitter
 function shareScore() {
   const score = parseInt($('final-score').textContent);
-  const maxScore = 1000;
-  const text = `I scored ${score}/${maxScore} on GeoHistory! Can you beat my score? 🌍📍`;
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`;
-  window.open(url, '_blank');
+  const maxScore = MAX_POINTS.reduce((a, b) => a + b, 0);
+  
+  // Format date as "May 21st"
+  const today = new Date();
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const day = today.getDate();
+  const suffix = (d) => {
+    if (d >= 11 && d <= 13) return 'th';
+    switch (d % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+  const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
+  
+  // Build emoji circles based on each question's performance
+  // 🟢 green for Elite/Great, 🟡 yellow for Good, 🔴 red for Bad/Miss
+  // ⚪ platinum (white circle) for daily double won
+  const circles = breakdown.map((b, i) => {
+    // Daily double won = platinum
+    if (b.dailyDouble && b.dailyDouble.won) {
+      return '⚪';
+    }
+    // Score based on distance tiers
+    if (b.distMiles <= 100) return '🟢';  // Elite or Great
+    if (b.distMiles <= 200) return '🟡';  // Good
+    return '🔴';  // Bad or Miss
+  }).join('');
+  
+  // Build share text
+  const shareText = `GeoHistory / ${dateStr}
+${score} pts
+${circles}
+
+https://playgeohistory.netlify.app`;
+
+  // Try native share first (mobile), then fall back to clipboard
+  if (navigator.share) {
+    navigator.share({
+      title: 'GeoHistory',
+      text: shareText
+    }).catch(() => copyToClipboard(shareText));
+  } else {
+    copyToClipboard(shareText);
+  }
+}
+
+function copyToClipboard(text) {
+  // Try modern clipboard API
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showShareToast('Copied to clipboard! 📋');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  // Fallback method using textarea
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    showShareToast('Copied to clipboard! 📋');
+  } catch (e) {
+    showShareToast('Copy failed — try manually');
+  }
+  document.body.removeChild(textarea);
+}
+
+function showShareToast(message) {
+  let toast = document.getElementById('share-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'share-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      z-index: 9999;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.3s;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2500);
 }
 
 // Go to leaderboard
