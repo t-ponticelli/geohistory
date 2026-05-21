@@ -9,6 +9,7 @@
 <title>GeoHistory</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --cream: #fef7ed;
@@ -638,12 +639,15 @@
   }
   .splash-title span { color: var(--usa-red); }
 
-  .splash-sub {
-    font-size: 0.9rem;
+  .splash-theme {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 700;
     color: var(--ink-soft);
-    font-weight: 500;
-    margin-bottom: 18px;
-    max-width: 280px;
+    font-style: italic;
+    margin-bottom: 22px;
+    text-align: center;
+    line-height: 1.1;
   }
 
   .splash-rules {
@@ -908,11 +912,10 @@
         </svg>
       </div>
       <h1 class="splash-title">Geo<span>History</span></h1>
-      <p class="splash-sub">Today's theme: <strong>Business Through History</strong>. Read a clue, drop your pin where it happened.</p>
+      <p class="splash-theme" id="splash-theme">Business Through History</p>
       <div class="splash-rules">
         <div class="rule"><span class="rule-icon">📜</span><span>5 historical events, increasing in difficulty</span></div>
-        <div class="rule"><span class="rule-icon">📍</span><span>Tap the map to drop your pin</span></div>
-        <div class="rule"><span class="rule-icon">⚡</span><span>One random Daily Double per round</span></div>
+        <div class="rule"><span class="rule-icon">⚡</span><span>One Daily Double per round</span></div>
       </div>
       <div class="scoring-tiers">
         <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-25 mi</span></div>
@@ -1050,11 +1053,43 @@
   window.currentUserId = userId;
 })();
 
+// Initialize Supabase client
+const supabaseClient = window.supabase.createClient(
+  'https://pmxmxfvtnosyyjkiwvim.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
+);
+
+// Load today's theme on page load
+async function loadTodayTheme() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: round } = await supabaseClient
+      .from('daily_rounds')
+      .select('theme')
+      .eq('date', today)
+      .single();
+    
+    if (round && round.theme) {
+      const themeEl = document.getElementById('splash-theme');
+      if (themeEl) themeEl.textContent = round.theme;
+    }
+  } catch (e) {
+    console.error('Error loading theme:', e);
+  }
+}
+
+// Call it when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadTodayTheme);
+} else {
+  loadTodayTheme();
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // GAME DATA
 // ═══════════════════════════════════════════════════════════════════════
 
-const QUESTIONS = [
+let QUESTIONS = [
   {
     year: "1971",
     title: "Hello world",
@@ -1274,30 +1309,37 @@ async function startGame() {
     const today = new Date().toISOString().split('T')[0];
     const { data: round, error } = await supabaseClient
       .from('daily_rounds')
-      .select('question_ids')
+      .select('question_ids, theme')
       .eq('date', today)
       .single();
     
     if (error || !round) {
-      console.error('No round found for today');
-      return;
+      console.error('No round found for today, using default');
+    } else {
+      // Fetch the actual questions
+      const { data: questions } = await supabaseClient
+        .from('questions')
+        .select('*')
+        .in('id', round.question_ids);
+      
+      if (questions && questions.length > 0) {
+        // Sort questions to match the order in question_ids array
+        const orderedQuestions = round.question_ids
+          .map(id => questions.find(q => q.id === id))
+          .filter(q => q !== undefined);
+        
+        QUESTIONS = orderedQuestions.map(q => ({
+          year: q.year,
+          title: q.title,
+          clue: q.clue,
+          answer: { lat: q.answer_lat, lng: q.answer_lng },
+          location: q.location,
+          emoji: q.emoji
+        }));
+        
+        console.log('Loaded', QUESTIONS.length, 'questions for theme:', round.theme);
+      }
     }
-
-    // Fetch the actual questions
-    const { data: questions } = await supabaseClient
-      .from('questions')
-      .select('*')
-      .in('id', round.question_ids);
-    
-    // Map to local format
-    QUESTIONS = questions.map(q => ({
-      year: q.year,
-      title: q.title,
-      clue: q.clue,
-      answer: { lat: q.answer_lat, lng: q.answer_lng },
-      location: q.location,
-      emoji: q.emoji
-    }));
   } catch (e) {
     console.error('Error loading questions:', e);
   }
