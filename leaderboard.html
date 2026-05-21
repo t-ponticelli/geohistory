@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#fef7ed">
+<title>Leaderboard · GeoHistory</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --cream: #fef7ed;
+    --paper: #fffbf3;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --ink-mute: #888;
+    --border: #e8dfd0;
+    --usa-red: #bf0a30;
+    --usa-blue: #002868;
+    --green: #16a34a;
+    --gold: #d97706;
+    --silver: #9ca3af;
+    --bronze: #b45309;
+    --serif: ui-serif, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--cream);
+    font-family: var(--sans);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px 12px 80px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .header-back {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: var(--ink);
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .header-back:hover { background: #f5f1e8; }
+  .header-title {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    flex: 1;
+  }
+  .header-title span { color: var(--usa-red); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+  }
+  .tab-btn.active {
+    color: var(--usa-blue);
+    border-bottom-color: var(--usa-blue);
+  }
+  .tab-btn.disabled {
+    color: var(--ink-mute);
+    opacity: 0.5;
+    cursor: not-allowed;
+    font-size: 0.85rem;
+  }
+  .tab-btn.disabled:hover { color: var(--ink-mute); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* YOUR RANK CARD */
+  .your-rank {
+    background: var(--usa-blue);
+    color: white;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 40, 104, 0.2);
+  }
+  .your-rank.show { display: block; }
+  .your-rank-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .your-rank-label {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+  .your-rank-num {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 2rem;
+    line-height: 1;
+  }
+  .your-rank-score {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+  .your-rank-bottom {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-top: 4px;
+  }
+
+  /* META INFO (theme + date) */
+  .meta-info {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  .meta-theme {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .meta-count {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+  }
+
+  /* LEADERBOARD */
+  .leaderboard {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .leaderboard-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .leaderboard-row:last-child { border-bottom: none; }
+  .leaderboard-row.is-me {
+    background: #fef3c7;
+    border-left: 4px solid var(--gold);
+    padding-left: 12px;
+  }
+
+  .rank {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.3rem;
+    min-width: 36px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .rank.gold { color: var(--gold); font-size: 1.5rem; }
+  .rank.silver { color: var(--silver); font-size: 1.4rem; }
+  .rank.bronze { color: var(--bronze); font-size: 1.4rem; }
+
+  .player-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .player-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .player-circles {
+    margin-top: 2px;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+  .player-me-tag {
+    display: inline-block;
+    background: var(--gold);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .score {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .score-num {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--ink);
+  }
+  .score-circles-mobile {
+    display: none;
+  }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .empty-emoji {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .empty h3 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+    font-style: italic;
+  }
+  .empty p {
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 4px solid var(--border);
+    border-top-color: var(--usa-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loading-text {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  /* CTA BUTTON */
+  .cta-btn {
+    background: var(--usa-blue);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #001a4a;
+    margin-top: 12px;
+  }
+  .cta-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #001a4a;
+  }
+
+  /* CACHE INDICATOR */
+  .cache-indicator {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.7rem;
+    color: var(--ink-mute);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  
+  <div class="header">
+    <button class="header-back" onclick="window.location.href='/'">←</button>
+    <div class="header-title">Geo<span>History</span> Leaderboard</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="today">Today</button>
+    <button class="tab-btn disabled" data-tab="alltime" disabled>All Time — Coming Soon</button>
+  </div>
+
+  <!-- YOUR RANK -->
+  <div class="your-rank" id="your-rank">
+    <div class="your-rank-top">
+      <div>
+        <div class="your-rank-label">Your Rank</div>
+        <div class="your-rank-num" id="rank-num">—</div>
+      </div>
+      <div>
+        <div class="your-rank-label" style="text-align: right;">Your Score</div>
+        <div class="your-rank-score" id="rank-score">—</div>
+      </div>
+    </div>
+    <div class="your-rank-bottom" id="rank-bottom">—</div>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div id="today" class="tab-content active">
+    <div class="meta-info" id="today-meta" style="display:none;">
+      <div class="meta-theme" id="today-theme">—</div>
+      <div class="meta-count" id="today-count">— players</div>
+    </div>
+    <div id="today-content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading today's leaderboard...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL TIME TAB -->
+  <div id="alltime" class="tab-content">
+    <div class="meta-info" id="alltime-meta" style="display:none;">
+      <div class="meta-theme">Hall of Fame</div>
+      <div class="meta-count" id="alltime-count">— scores</div>
+    </div>
+    <div id="alltime-content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading all-time leaderboard...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cache-indicator" id="cache-indicator"></div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(
+  'https://pmxmxfvtnosyyjkiwvim.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
+);
+
+const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const $ = (id) => document.getElementById(id);
+
+// Get current game date (3 AM EST reset)
+function getGameDate() {
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const estMs = utcMs - (5 * 60 * 60 * 1000);
+  const adjusted = new Date(estMs - (3 * 60 * 60 * 1000));
+  return adjusted.toISOString().split('T')[0];
+}
+
+// Get cached data if fresh
+function getCached(key) {
+  try {
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION_MS) return null;
+    return { data, timestamp };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Save to cache
+function setCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (e) {
+    console.error('Cache write failed:', e);
+  }
+}
+
+// Format relative time
+function formatCacheTime(timestamp) {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ago`;
+}
+
+// Build score circles from question_details
+function buildCircles(details) {
+  if (!details || !Array.isArray(details)) return '';
+  return details.map(q => {
+    if (q.dailyDouble && q.dailyDouble.won) return '⚪';
+    if (q.distMiles <= 100) return '🟢';
+    if (q.distMiles <= 200) return '🟡';
+    return '🔴';
+  }).join('');
+}
+
+// Get rank styling
+function getRankClass(rank) {
+  if (rank === 1) return 'gold';
+  if (rank === 2) return 'silver';
+  if (rank === 3) return 'bronze';
+  return '';
+}
+
+// Get rank prefix
+function getRankPrefix(rank) {
+  if (rank === 1) return '🥇';
+  if (rank === 2) return '🥈';
+  if (rank === 3) return '🥉';
+  return `#${rank}`;
+}
+
+// Render a leaderboard
+function renderLeaderboard(scores, currentUsername, container) {
+  if (!scores || scores.length === 0) return false;
+  
+  const html = scores.map((s, i) => {
+    const rank = i + 1;
+    const isMe = currentUsername && s.username && s.username.toLowerCase() === currentUsername.toLowerCase();
+    const circles = buildCircles(s.question_details);
+    
+    return `
+      <div class="leaderboard-row ${isMe ? 'is-me' : ''}">
+        <div class="rank ${getRankClass(rank)}">${getRankPrefix(rank)}</div>
+        <div class="player-info">
+          <div class="player-name">
+            ${escapeHtml(s.username || 'Anonymous')}
+            ${isMe ? '<span class="player-me-tag">You</span>' : ''}
+          </div>
+          ${circles ? `<div class="player-circles">${circles}</div>` : ''}
+        </div>
+        <div class="score">
+          <div class="score-num">${s.total_score}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = '<div class="leaderboard">' + html + '</div>';
+  return true;
+}
+
+// Render empty state
+function renderEmpty(container, message, showCTA) {
+  container.innerHTML = `
+    <div class="empty">
+      <span class="empty-emoji">🌍</span>
+      <h3>No scores yet</h3>
+      <p>${message}</p>
+      ${showCTA ? '<button class="cta-btn" onclick="window.location.href=\'/\'">Play Now</button>' : ''}
+    </div>
+  `;
+}
+
+// Update your rank card
+function updateYourRank(scores, username, tabType) {
+  if (!username) return;
+  const myIndex = scores.findIndex(s => s.username && s.username.toLowerCase() === username.toLowerCase());
+  
+  if (myIndex === -1) {
+    $('your-rank').classList.remove('show');
+    return;
+  }
+  
+  const myScore = scores[myIndex];
+  $('rank-num').textContent = `#${myIndex + 1}`;
+  $('rank-score').textContent = myScore.total_score;
+  $('rank-bottom').textContent = tabType === 'today' 
+    ? `out of ${scores.length} players today` 
+    : `out of ${scores.length} all-time`;
+  $('your-rank').classList.add('show');
+}
+
+// Load today's leaderboard
+async function loadToday() {
+  const gameDate = getGameDate();
+  const cacheKey = `leaderboard_today_${gameDate}`;
+  const username = localStorage.getItem('geo_username');
+  
+  // Check cache first
+  const cached = getCached(cacheKey);
+  if (cached) {
+    displayToday(cached.data, username);
+    $('cache-indicator').textContent = `Last updated ${formatCacheTime(cached.timestamp)} · refreshes every 15 min`;
+    return;
+  }
+  
+  try {
+    // Fetch today's scores
+    const { data: scores, error } = await supabase
+      .from('scores')
+      .select('username, total_score, question_details, theme, created_at')
+      .eq('date', gameDate)
+      .order('total_score', { ascending: false })
+      .limit(100);
+    
+    if (error) throw error;
+    
+    setCache(cacheKey, scores || []);
+    displayToday(scores || [], username);
+    $('cache-indicator').textContent = `Updated just now · refreshes every 15 min`;
+  } catch (e) {
+    console.error('Today error:', e);
+    $('today-content').innerHTML = '<div class="empty"><h3>Couldn\'t load leaderboard</h3><p>Try again in a moment</p></div>';
+  }
+}
+
+function displayToday(scores, username) {
+  const container = $('today-content');
+  
+  if (!scores || scores.length === 0) {
+    renderEmpty(container, 'Be the first to play today!', true);
+    $('today-meta').style.display = 'none';
+    $('your-rank').classList.remove('show');
+    return;
+  }
+  
+  // Update meta info
+  $('today-meta').style.display = 'flex';
+  $('today-theme').textContent = scores[0].theme || 'Today\'s Round';
+  $('today-count').textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
+  
+  renderLeaderboard(scores, username, container);
+  updateYourRank(scores, username, 'today');
+}
+
+// Load all-time leaderboard
+async function loadAllTime() {
+  const cacheKey = 'leaderboard_alltime';
+  const username = localStorage.getItem('geo_username');
+  
+  const cached = getCached(cacheKey);
+  if (cached) {
+    displayAllTime(cached.data, username);
+    return;
+  }
+  
+  try {
+    // Fetch top 100 all-time scores
+    const { data: scores, error } = await supabase
+      .from('scores')
+      .select('username, total_score, question_details, theme, date')
+      .order('total_score', { ascending: false })
+      .limit(100);
+    
+    if (error) throw error;
+    
+    setCache(cacheKey, scores || []);
+    displayAllTime(scores || [], username);
+  } catch (e) {
+    console.error('All-time error:', e);
+    $('alltime-content').innerHTML = '<div class="empty"><h3>Couldn\'t load leaderboard</h3></div>';
+  }
+}
+
+function displayAllTime(scores, username) {
+  const container = $('alltime-content');
+  
+  if (!scores || scores.length === 0) {
+    renderEmpty(container, 'No scores recorded yet.', true);
+    $('alltime-meta').style.display = 'none';
+    return;
+  }
+  
+  $('alltime-meta').style.display = 'flex';
+  $('alltime-count').textContent = `Top ${scores.length} scores`;
+  
+  renderLeaderboard(scores, username, container);
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('disabled')) return;
+    
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    $(btn.dataset.tab).classList.add('active');
+    
+    // Update rank card for the visible tab
+    const username = localStorage.getItem('geo_username');
+    if (btn.dataset.tab === 'today') {
+      const cached = getCached(`leaderboard_today_${getGameDate()}`);
+      if (cached) updateYourRank(cached.data, username, 'today');
+      else $('your-rank').classList.remove('show');
+    }
+  });
+});
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Initialize (only today's leaderboard - All Time coming soon)
+loadToday();
+</script>
+
+</body>
+</html>
