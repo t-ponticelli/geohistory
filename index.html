@@ -665,16 +665,187 @@
   }
 
   /* ─── SPLASH ─── */
+  /* ─── USERNAME MODAL ─── */
+  .username-modal {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    z-index: 5000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .username-modal.show { display: flex; }
+  .username-content {
+    background: var(--paper);
+    border-radius: 24px;
+    padding: 32px 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    text-align: center;
+  }
+  .username-icon {
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+  }
+  .username-content h2 {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    font-weight: 900;
+    font-style: italic;
+    margin-bottom: 8px;
+    line-height: 1.1;
+  }
+  .title-gradient { color: var(--usa-red); }
+  .username-subtitle {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+    line-height: 1.4;
+  }
+  .username-content label {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .username-content input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+    background: white;
+    text-align: center;
+    font-weight: 600;
+  }
+  .username-content input:focus {
+    outline: none;
+    border-color: var(--usa-blue);
+  }
+  .username-hint {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    text-align: left;
+  }
+  .username-content .btn-primary {
+    width: 100%;
+  }
+  .username-error {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 12px;
+    font-weight: 600;
+    min-height: 1.2em;
+  }
+
+  /* ─── ALREADY PLAYED SCREEN ─── */
+  .already-played-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    z-index: 4500;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .already-played-screen.show { display: flex; }
+  .already-played-content {
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .already-played-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--green);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+  }
+  .already-played-content h2 {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    font-weight: 900;
+    font-style: italic;
+    margin-bottom: 6px;
+  }
+  .already-played-username {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+  }
+  .already-played-score-card {
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 320px;
+  }
+  .ap-score-label {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .ap-score-num {
+    font-family: var(--serif);
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .ap-circles {
+    font-size: 1.5rem;
+    letter-spacing: 4px;
+  }
+  .already-played-next {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+  .ap-countdown {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--usa-blue);
+    margin-bottom: 20px;
+  }
+
   #splash {
     position: absolute;
     inset: 0;
     background: var(--cream);
     z-index: 3000;
-    display: flex;
+    display: none;
     flex-direction: column;
     padding: max(env(safe-area-inset-top), 16px) 20px max(env(safe-area-inset-bottom), 16px);
     overflow-y: auto;
   }
+  #splash.show { display: flex; }
 
   .splash-top {
     flex: 1;
@@ -965,6 +1136,46 @@
 <body>
 <div id="app">
 
+  <!-- USERNAME MODAL (first visit) -->
+  <div id="username-modal" class="username-modal">
+    <div class="username-content">
+      <div class="username-icon">🌍</div>
+      <h2>Welcome to <span class="title-gradient">GeoHistory</span></h2>
+      <p class="username-subtitle">Pick a username to track your scores and compete with friends.</p>
+      
+      <label>Username</label>
+      <input type="text" id="username-input" placeholder="e.g., trevor_p" maxlength="20" autocomplete="off" />
+      <div class="username-hint">3-20 characters. Letters, numbers, and underscores only.</div>
+      
+      <button class="btn-primary" id="username-submit" onclick="submitUsername()">Let's Play</button>
+      
+      <div id="username-error" class="username-error"></div>
+    </div>
+  </div>
+
+  <!-- ALREADY PLAYED TODAY SCREEN -->
+  <div id="already-played" class="already-played-screen">
+    <div class="already-played-content">
+      <div class="already-played-icon">✓</div>
+      <h2>You've already played today!</h2>
+      <p class="already-played-username">Welcome back, <strong id="ap-username">player</strong></p>
+      
+      <div class="already-played-score-card">
+        <div class="ap-score-label">YOUR SCORE TODAY</div>
+        <div class="ap-score-num" id="ap-score">—</div>
+        <div class="ap-circles" id="ap-circles"></div>
+      </div>
+      
+      <p class="already-played-next">Come back tomorrow for new questions!</p>
+      <div class="ap-countdown" id="ap-countdown">Next round in: —</div>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px;">
+        <button class="btn-secondary" onclick="shareYesterday()">Share Score 📤</button>
+        <button class="btn-secondary" onclick="viewLeaderboard()">View Leaderboard 🏅</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SPLASH -->
   <div id="splash">
     <div class="splash-top">
@@ -1149,30 +1360,238 @@
 </div>
 
 <script>
-// Initialize user ID on page load
-(function initUser() {
-  let userId = localStorage.getItem('geo_user_id');
-  if (!userId) {
-    userId = 'user_' + Math.random().toString(36).slice(2, 11);
-    localStorage.setItem('geo_user_id', userId);
-  }
-  window.currentUserId = userId;
-})();
-
-// Initialize Supabase client
+// Initialize Supabase client first
 const supabaseClient = window.supabase.createClient(
   'https://pmxmxfvtnosyyjkiwvim.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
 );
 
-// Load today's theme on page load
+// ═══════════════════════════════════════════════════════════════════════
+// USER MANAGEMENT & DAILY LIMIT
+// ═══════════════════════════════════════════════════════════════════════
+
+// Get the current "game day" using 3 AM EST as the boundary
+function getGameDate() {
+  // Convert current time to EST (UTC-5) and offset by 3 hours
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const estMs = utcMs - (5 * 60 * 60 * 1000); // EST = UTC-5
+  const adjusted = new Date(estMs - (3 * 60 * 60 * 1000)); // Shift back 3 hours
+  return adjusted.toISOString().split('T')[0];
+}
+
+// Validate username format
+function validateUsername(username) {
+  if (!username) return 'Please enter a username';
+  if (username.length < 3) return 'Username must be at least 3 characters';
+  if (username.length > 20) return 'Username must be 20 characters or less';
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Only letters, numbers, and underscores allowed';
+  return null; // Valid
+}
+
+// Submit username (called from button click)
+async function submitUsername() {
+  const input = document.getElementById('username-input');
+  const errorEl = document.getElementById('username-error');
+  const submitBtn = document.getElementById('username-submit');
+  const username = input.value.trim();
+  
+  // Validate
+  const validationError = validateUsername(username);
+  if (validationError) {
+    errorEl.textContent = validationError;
+    return;
+  }
+  
+  errorEl.textContent = '';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Checking...';
+  
+  try {
+    // Check if username exists (case-insensitive)
+    const { data: existing } = await supabaseClient
+      .from('users')
+      .select('id, username, client_id')
+      .ilike('username', username)
+      .maybeSingle();
+    
+    let userId;
+    let clientId = localStorage.getItem('geo_client_id');
+    if (!clientId) {
+      clientId = 'client_' + Math.random().toString(36).slice(2, 11);
+    }
+    
+    if (existing) {
+      // Username taken - check if it belongs to this device
+      if (existing.client_id === clientId) {
+        userId = existing.id;
+      } else {
+        errorEl.textContent = 'Username is taken. Try another!';
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Let's Play";
+        return;
+      }
+    } else {
+      // Create new user
+      const { data: newUser, error } = await supabaseClient
+        .from('users')
+        .insert({
+          username: username,
+          client_id: clientId
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      userId = newUser.id;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('geo_user_id', userId);
+    localStorage.setItem('geo_username', username);
+    localStorage.setItem('geo_client_id', clientId);
+    window.currentUserId = userId;
+    window.currentUsername = username;
+    
+    // Hide modal and check if they've played today
+    document.getElementById('username-modal').classList.remove('show');
+    await checkDailyPlay();
+    
+  } catch (e) {
+    console.error('Username error:', e);
+    errorEl.textContent = 'Error: ' + e.message;
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Let's Play";
+  }
+}
+
+// Check if user has played today
+async function checkDailyPlay() {
+  const userId = window.currentUserId;
+  const gameDate = getGameDate();
+  
+  try {
+    const { data: todayScore } = await supabaseClient
+      .from('scores')
+      .select('total_score, question_details')
+      .eq('user_id', userId)
+      .eq('date', gameDate)
+      .maybeSingle();
+    
+    if (todayScore) {
+      // Already played - show the "already played" screen
+      showAlreadyPlayed(todayScore);
+    } else {
+      // First time today - show splash
+      showSplash();
+    }
+  } catch (e) {
+    console.error('Daily check error:', e);
+    // If there's an error, just show splash
+    showSplash();
+  }
+}
+
+// Show the splash screen
+function showSplash() {
+  document.getElementById('splash').classList.add('show');
+  loadTodayTheme();
+}
+
+// Show "already played today" screen
+function showAlreadyPlayed(scoreData) {
+  document.getElementById('ap-username').textContent = window.currentUsername;
+  document.getElementById('ap-score').textContent = scoreData.total_score;
+  
+  // Build circles from question_details
+  if (scoreData.question_details && Array.isArray(scoreData.question_details)) {
+    const circles = scoreData.question_details.map(q => {
+      if (q.dailyDouble && q.dailyDouble.won) return '⚪';
+      if (q.distMiles <= 100) return '🟢';
+      if (q.distMiles <= 200) return '🟡';
+      return '🔴';
+    }).join('');
+    document.getElementById('ap-circles').textContent = circles;
+  }
+  
+  // Store for sharing
+  window.yesterdayScore = scoreData;
+  
+  // Start countdown to next game
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+  
+  document.getElementById('already-played').classList.add('show');
+}
+
+// Countdown timer to next 3 AM EST
+function updateCountdown() {
+  const now = new Date();
+  const nextReset = new Date();
+  
+  // Set to 3 AM EST (8 AM UTC during standard time)
+  nextReset.setUTCHours(8, 0, 0, 0);
+  
+  // If we're past 3 AM EST today, target tomorrow
+  if (now.getTime() >= nextReset.getTime()) {
+    nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+  }
+  
+  const diff = nextReset.getTime() - now.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  const el = document.getElementById('ap-countdown');
+  if (el) {
+    el.textContent = `Next round in: ${hours}h ${minutes}m ${seconds}s`;
+  }
+}
+
+// Share yesterday's score (from already-played screen)
+function shareYesterday() {
+  if (!window.yesterdayScore) return;
+  
+  const score = window.yesterdayScore.total_score;
+  const details = window.yesterdayScore.question_details || [];
+  
+  const today = new Date();
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const day = today.getDate();
+  const suffix = (d) => {
+    if (d >= 11 && d <= 13) return 'th';
+    switch (d % 10) { case 1: return 'st'; case 2: return 'nd'; case 3: return 'rd'; default: return 'th'; }
+  };
+  const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
+  
+  const circles = details.map(q => {
+    if (q.dailyDouble && q.dailyDouble.won) return '⚪';
+    if (q.distMiles <= 100) return '🟢';
+    if (q.distMiles <= 200) return '🟡';
+    return '🔴';
+  }).join('');
+  
+  const shareText = `GeoHistory / ${dateStr}\n${score} pts\n${circles}\nPlay at playgeohistory.netlify.app`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'GeoHistory',
+      text: shareText,
+      url: 'https://playgeohistory.netlify.app'
+    }).catch(() => copyToClipboard(shareText));
+  } else {
+    copyToClipboard(shareText);
+  }
+}
+
+// Load today's theme on splash
 async function loadTodayTheme() {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const gameDate = getGameDate();
     const { data: round } = await supabaseClient
       .from('daily_rounds')
       .select('theme')
-      .eq('date', today)
+      .eq('date', gameDate)
       .single();
     
     if (round && round.theme) {
@@ -1184,12 +1603,42 @@ async function loadTodayTheme() {
   }
 }
 
-// Call it when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', loadTodayTheme);
-} else {
-  loadTodayTheme();
+// Main initialization - check for username on page load
+async function initApp() {
+  const savedUserId = localStorage.getItem('geo_user_id');
+  const savedUsername = localStorage.getItem('geo_username');
+  
+  if (savedUserId && savedUsername) {
+    // Returning user - check if they've played today
+    window.currentUserId = savedUserId;
+    window.currentUsername = savedUsername;
+    await checkDailyPlay();
+  } else {
+    // New user - show username modal
+    document.getElementById('username-modal').classList.add('show');
+    // Focus the input
+    setTimeout(() => {
+      const input = document.getElementById('username-input');
+      if (input) input.focus();
+    }, 100);
+  }
+  
+  // Allow Enter key to submit username
+  const usernameInput = document.getElementById('username-input');
+  if (usernameInput) {
+    usernameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') submitUsername();
+    });
+  }
 }
+
+// Run on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // GAME DATA
@@ -1404,7 +1853,7 @@ function initMap() {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function startGame() {
-  $('splash').style.display = 'none';
+  $('splash').classList.remove('show');
   
   // Randomize which question gets the daily double (Q2-Q5, i.e., index 1-4)
   dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
@@ -1412,11 +1861,11 @@ async function startGame() {
   
   // Fetch today's round from Supabase
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const gameDate = getGameDate();
     const { data: round, error } = await supabaseClient
       .from('daily_rounds')
       .select('question_ids, theme')
-      .eq('date', today)
+      .eq('date', gameDate)
       .single();
     
     if (error || !round) {
@@ -1826,21 +2275,36 @@ function confirmDailyDouble() {
 // Save score to Supabase
 async function saveScore(finalScore) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const gameDate = getGameDate();
     
-    // Save individual question scores
-    for (let i = 0; i < breakdown.length; i++) {
-      const b = breakdown[i];
-      const q = QUESTIONS[i];
-      
-      await supabaseClient.from('scores').insert({
-        user_id: window.currentUserId,
-        date: today,
-        question_id: i,
-        question_title: q.title,
-        points: b.pts
-      });
-    }
+    // Get current theme
+    let theme = 'GeoHistory';
+    try {
+      const themeEl = document.getElementById('splash-theme');
+      if (themeEl) theme = themeEl.textContent;
+    } catch(e) {}
+    
+    // Save one row per game with full details
+    await supabaseClient.from('scores').insert({
+      user_id: window.currentUserId,
+      username: window.currentUsername,
+      date: gameDate,
+      theme: theme,
+      total_score: finalScore,
+      max_possible: MAX_POINTS.reduce((a, b) => a + b, 0),
+      question_details: breakdown
+    });
+    
+    // Update user's last_play_date
+    await supabaseClient
+      .from('users')
+      .update({ 
+        last_play_date: gameDate,
+        last_played_at: new Date().toISOString(),
+        total_games: 1, // Will need to increment properly later
+        total_score: finalScore
+      })
+      .eq('id', window.currentUserId);
   } catch (e) {
     console.error('Error saving score:', e);
   }
@@ -1880,18 +2344,18 @@ function shareScore() {
     return '🔴';  // Bad or Miss
   }).join('');
   
-  // Build share text
+  // Build share text - single line URL so it stays in one message
   const shareText = `GeoHistory / ${dateStr}
 ${score} pts
 ${circles}
-
-https://playgeohistory.netlify.app`;
+Play at playgeohistory.netlify.app`;
 
   // Try native share first (mobile), then fall back to clipboard
   if (navigator.share) {
     navigator.share({
       title: 'GeoHistory',
-      text: shareText
+      text: shareText,
+      url: 'https://playgeohistory.netlify.app'
     }).catch(() => copyToClipboard(shareText));
   } else {
     copyToClipboard(shareText);
