@@ -117,6 +117,17 @@
   .checkbox-item:last-child { border-bottom: none; }
   .checkbox-item input { width: 18px; height: 18px; flex: 0 0 18px; }
   .checkbox-item label { margin: 0; cursor: pointer; flex: 1; font-weight: normal; }
+  .checkbox-item .order-select {
+    width: 110px;
+    padding: 4px 6px;
+    border: 1px solid #d0d8e0;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #002868;
+    cursor: pointer;
+  }
   .checkbox-item .preview { display: block; font-size: 0.75rem; color: #888; margin-top: 2px; }
 
   .status { padding: 12px; border-radius: 8px; margin-top: 16px; font-weight: 600; }
@@ -414,20 +425,53 @@ function renderScheduleCheckboxes() {
   $('schQuestionList').innerHTML = allQuestions.map(q => `
     <div class="checkbox-item">
       <input type="checkbox" id="sch_${q.id}" data-qid="${q.id}" onchange="updateSelectedCount()" />
+      <select class="order-select" data-qid="${q.id}" onchange="updateSelectedCount()" style="display:none;">
+        <option value="">Order</option>
+        <option value="1">1 (Easy)</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5 (Hard)</option>
+      </select>
       <label for="sch_${q.id}">
         ${q.emoji} <strong>${escapeHtml(q.title)}</strong> • ${escapeHtml(q.location)}
         <span class="preview">${escapeHtml(q.clue.substring(0, 80))}...</span>
       </label>
     </div>
   `).join('');
+  
+  // Show order dropdown only when checkbox is checked
+  document.querySelectorAll('#schQuestionList input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const select = cb.parentElement.querySelector('.order-select');
+      select.style.display = cb.checked ? 'inline-block' : 'none';
+      if (!cb.checked) select.value = '';
+    });
+  });
+  
   updateSelectedCount();
 }
 
 function updateSelectedCount() {
-  const count = document.querySelectorAll('#schQuestionList input:checked').length;
-  $('selectedCount').textContent = `${count} / 5 selected`;
-  $('selectedCount').style.background = count === 5 ? '#d4edda' : '#e3edff';
-  $('selectedCount').style.color = count === 5 ? '#155724' : '#002868';
+  const checked = document.querySelectorAll('#schQuestionList input[type="checkbox"]:checked');
+  const count = checked.length;
+  
+  // Check that all checked items have an order
+  const allHaveOrder = Array.from(checked).every(cb => {
+    const select = cb.parentElement.querySelector('.order-select');
+    return select.value !== '';
+  });
+  
+  let msg = `${count} / 5 selected`;
+  if (count === 5 && allHaveOrder) {
+    msg += ' ✓ all ordered';
+  } else if (count === 5) {
+    msg += ' — assign order to each';
+  }
+  
+  $('selectedCount').textContent = msg;
+  $('selectedCount').style.background = (count === 5 && allHaveOrder) ? '#d4edda' : '#e3edff';
+  $('selectedCount').style.color = (count === 5 && allHaveOrder) ? '#155724' : '#002868';
 }
 
 async function loadSchedule() {
@@ -439,15 +483,34 @@ async function loadSchedule() {
   }
   if (!data) {
     showStatus('schStatus', 'No round scheduled for this date yet.', 'info');
-    document.querySelectorAll('#schQuestionList input').forEach(cb => cb.checked = false);
+    document.querySelectorAll('#schQuestionList input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('#schQuestionList .order-select').forEach(s => {
+      s.value = '';
+      s.style.display = 'none';
+    });
     $('schTheme').value = '';
     updateSelectedCount();
     return;
   }
   $('schTheme').value = data.theme;
-  document.querySelectorAll('#schQuestionList input').forEach(cb => {
-    cb.checked = data.question_ids.includes(parseInt(cb.dataset.qid));
+  
+  // Check the boxes and assign order based on position in array
+  document.querySelectorAll('#schQuestionList input[type="checkbox"]').forEach(cb => {
+    const qid = parseInt(cb.dataset.qid);
+    const index = data.question_ids.indexOf(qid);
+    const orderSelect = cb.parentElement.querySelector('.order-select');
+    
+    if (index >= 0) {
+      cb.checked = true;
+      orderSelect.value = (index + 1).toString();
+      orderSelect.style.display = 'inline-block';
+    } else {
+      cb.checked = false;
+      orderSelect.value = '';
+      orderSelect.style.display = 'none';
+    }
   });
+  
   updateSelectedCount();
   showStatus('schStatus', 'Loaded schedule for ' + date, 'success');
 }
@@ -455,15 +518,38 @@ async function loadSchedule() {
 async function saveSchedule() {
   const date = $('schDate').value;
   const theme = $('schTheme').value.trim();
-  const selectedIds = Array.from(document.querySelectorAll('#schQuestionList input:checked'))
-    .map(cb => parseInt(cb.dataset.qid));
+  
+  // Collect selected questions with their order
+  const selectedItems = [];
+  document.querySelectorAll('#schQuestionList input[type="checkbox"]:checked').forEach(cb => {
+    const orderSelect = cb.parentElement.querySelector('.order-select');
+    selectedItems.push({
+      qid: parseInt(cb.dataset.qid),
+      order: parseInt(orderSelect.value) || 0
+    });
+  });
 
   if (!date) return showStatus('schStatus', 'Please select a date.', 'error');
   if (!theme) return showStatus('schStatus', 'Please enter a theme.', 'error');
-  if (selectedIds.length !== 5) return showStatus('schStatus', `Please select exactly 5 questions (currently ${selectedIds.length}).`, 'error');
+  if (selectedItems.length !== 5) return showStatus('schStatus', `Please select exactly 5 questions (currently ${selectedItems.length}).`, 'error');
+  
+  // Check all have orders assigned
+  if (selectedItems.some(item => item.order === 0)) {
+    return showStatus('schStatus', 'Please assign an order (1-5) to each selected question.', 'error');
+  }
+  
+  // Check orders are unique 1-5
+  const orders = selectedItems.map(item => item.order).sort();
+  if (orders.join(',') !== '1,2,3,4,5') {
+    return showStatus('schStatus', 'Each question must have a unique order from 1 to 5.', 'error');
+  }
+  
+  // Sort by order and extract IDs
+  selectedItems.sort((a, b) => a.order - b.order);
+  const orderedIds = selectedItems.map(item => item.qid);
 
   const { error } = await sb.from('daily_rounds').upsert({
-    date, theme, question_ids: selectedIds, status: 'active'
+    date, theme, question_ids: orderedIds, status: 'active'
   }, { onConflict: 'date' });
 
   if (error) showStatus('schStatus', 'Error: ' + error.message, 'error');
