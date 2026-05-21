@@ -1503,8 +1503,19 @@ function submitGuess() {
     .setLngLat([q.answer.lng, q.answer.lat])
     .addTo(map);
 
-  // Draw connector line
+  // Draw connector line (handle dateline crossing)
   if (lineSourceAdded) {
+    let guessLng = guessLngLat.lng;
+    let answerLng = q.answer.lng;
+    
+    // If the line would cross more than 180°, adjust so it takes the short path
+    const lngDiff = answerLng - guessLng;
+    if (lngDiff > 180) {
+      answerLng -= 360;
+    } else if (lngDiff < -180) {
+      answerLng += 360;
+    }
+    
     map.getSource('connector').setData({
       type: 'FeatureCollection',
       features: [{
@@ -1512,18 +1523,22 @@ function submitGuess() {
         geometry: {
           type: 'LineString',
           coordinates: [
-            [guessLngLat.lng, guessLngLat.lat],
-            [q.answer.lng, q.answer.lat]
+            [guessLng, guessLngLat.lat],
+            [answerLng, q.answer.lat]
           ]
         }
       }]
     });
   }
 
-  // Fit both points
+  // Fit both points (adjust answer position for dateline if needed)
+  let fitAnswerLng = q.answer.lng;
+  const fitLngDiff = q.answer.lng - guessLngLat.lng;
+  if (fitLngDiff > 180) fitAnswerLng -= 360;
+  else if (fitLngDiff < -180) fitAnswerLng += 360;
   const bounds = new maplibregl.LngLatBounds()
     .extend([guessLngLat.lng, guessLngLat.lat])
-    .extend([q.answer.lng, q.answer.lat]);
+    .extend([fitAnswerLng, q.answer.lat]);
   map.fitBounds(bounds, { padding: { top: 80, bottom: 280, left: 60, right: 60 }, maxZoom: 8, duration: 800 });
 
   $('score-chip').textContent = totalScore;
