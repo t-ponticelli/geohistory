@@ -3,12 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#fef7ed">
-<title>GeoHistory</title>
-<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<title>Leaderboard · GeoHistory</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -17,2413 +13,636 @@
     --ink: #1a1a1a;
     --ink-soft: #4a4a4a;
     --ink-mute: #888;
-    --orange: #ff7a45;
-    --orange-deep: #e8632d;
-    --green: #16a34a;
-    --red: #dc2626;
     --border: #e8dfd0;
-    --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
-    --serif: ui-serif, Georgia, "Times New Roman", serif;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
-    /* Patriotic palette */
     --usa-red: #bf0a30;
     --usa-blue: #002868;
-    --usa-red-soft: #f9e3e7;
-    --usa-blue-soft: #e0e6f3;
+    --green: #16a34a;
+    --gold: #d97706;
+    --silver: #9ca3af;
+    --bronze: #b45309;
+    --serif: ui-serif, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  html, body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
   body {
     background: var(--cream);
     font-family: var(--sans);
     color: var(--ink);
-    position: fixed;
-    inset: 0;
-    user-select: none;
-    -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
   }
 
-  #app {
-    height: 100dvh;
-    width: 100vw;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px 12px 80px;
   }
 
-  /* ─── TOP BAR ─── */
-  #topbar {
-    background: var(--paper);
-    border-bottom: 1px solid var(--border);
-    padding: max(env(safe-area-inset-top), 12px) 16px 12px;
+  /* HEADER */
+  .header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    z-index: 100;
-    flex-shrink: 0;
-    position: relative;
+    margin-bottom: 24px;
   }
-  /* Patriotic stripe under topbar */
-  #topbar::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: -3px;
-    height: 3px;
-    background: linear-gradient(to right,
-      var(--usa-red) 0%, var(--usa-red) 50%,
-      var(--usa-blue) 50%, var(--usa-blue) 100%);
-  }
-
-  .brand {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.15rem;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    font-style: italic;
-  }
-  .brand span { color: var(--usa-red); }
-
-  .pip-row {
-    display: flex;
-    gap: 5px;
-    flex: 1;
-    justify-content: center;
-  }
-  .pip {
-    width: 22px;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--border);
-    transition: all 0.3s;
-  }
-  .pip.active { background: var(--usa-red); width: 32px; }
-  .pip.done { background: var(--ink); }
-
-  .score-chip {
-    background: var(--ink);
-    color: var(--cream);
-    padding: 6px 12px;
-    border-radius: 100px;
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    font-weight: 600;
-    min-width: 52px;
-    text-align: center;
-  }
-
-  /* ─── MAP ─── */
-  #map-wrap {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    background: #1a2634;
-  }
-
-  #map {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .tap-hint {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--ink);
-    color: var(--cream);
-    padding: 10px 18px;
-    border-radius: 100px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    pointer-events: none;
-    z-index: 400;
-    box-shadow: var(--shadow-lg);
-    animation: bob 2s ease-in-out infinite;
-    white-space: nowrap;
-  }
-  .tap-hint.hidden { opacity: 0; transition: opacity 0.3s; }
-
-  @keyframes bob {
-    0%, 100% { transform: translate(-50%, -50%); }
-    50% { transform: translate(-50%, calc(-50% - 6px)); }
-  }
-
-  /* ─── CLUE CARD ─── */
-  #clue-card {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
+  .header-back {
     background: var(--paper);
-    border-radius: 18px;
-    box-shadow: var(--shadow-lg);
-    padding: 10px 14px;
-    z-index: 500;
-    transition: all 0.35s cubic-bezier(.16,1,.3,1);
     border: 1px solid var(--border);
-  }
-  #clue-card.collapsed { padding: 8px 12px; }
-
-  .clue-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-  #clue-card.collapsed .clue-header { margin-bottom: 0; }
-
-  .clue-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .q-tag {
-    background: var(--ink);
-    color: var(--cream);
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-family: var(--mono);
-  }
-  .pts-tag {
-    background: var(--usa-red);
-    color: white;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-family: var(--mono);
-  }
-
-  .toggle-btn {
-    background: var(--cream);
-    border: 1px solid var(--border);
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.3s;
-    font-size: 0.9rem;
-    color: var(--ink-soft);
-    flex-shrink: 0;
-  }
-  #clue-card.collapsed .toggle-btn { transform: rotate(180deg); }
-
-  .clue-title {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.25rem;
-    line-height: 1.2;
+    font-size: 1.3rem;
     color: var(--ink);
-    margin-bottom: 10px;
-    font-style: italic;
-  }
-
-  .clue-body {
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(.16,1,.3,1), opacity 0.25s;
-    max-height: 500px;
-    opacity: 1;
-  }
-  #clue-card.collapsed .clue-body {
-    max-height: 0;
-    opacity: 0;
-  }
-
-  .clue-year {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 0.85rem;
-    color: var(--usa-red);
-    letter-spacing: 0.04em;
-    margin-bottom: 6px;
-    font-style: italic;
-  }
-
-  .clue-text {
-    font-size: 1.05rem;
-    line-height: 1.6;
-    color: var(--ink-soft);
-    margin-bottom: 10px;
-    font-weight: 500;
-  }
-
-  .hint-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .hint {
-    background: var(--cream);
-    border: 1px solid var(--border);
-    color: var(--ink-soft);
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 4px 9px;
-    border-radius: 100px;
-  }
-
-  /* ─── ACTION BAR ─── */
-  #action-bar {
-    background: var(--paper);
-    border-top: 1px solid var(--border);
-    padding: 14px 16px max(env(safe-area-inset-bottom), 16px);
+    transition: all 0.2s;
     flex-shrink: 0;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
   }
+  .header-back:hover { background: #f5f1e8; }
+  .header-title {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    flex: 1;
+  }
+  .header-title span { color: var(--usa-red); }
 
-  /* DAILY DOUBLE BUTTON */
-  .dd-btn {
-    position: relative;
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: #1a1a1a;
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1;
+    background: none;
     border: none;
     padding: 12px 16px;
-    border-radius: 12px;
-    font-weight: 700;
+    font-family: var(--sans);
+    font-weight: 600;
     font-size: 0.95rem;
+    color: var(--ink-soft);
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.3) inset;
-    animation: ddPulse 2s ease-in-out infinite;
-    overflow: hidden;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
   }
-  .dd-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.6) 50%,
-      transparent 100%
-    );
-    animation: ddGleam 2.5s ease-in-out infinite;
+  .tab-btn.active {
+    color: var(--usa-blue);
+    border-bottom-color: var(--usa-blue);
   }
-  .dd-btn:active { transform: scale(0.98); }
+  .tab-btn.disabled {
+    color: var(--ink-mute);
+    opacity: 0.5;
+    cursor: not-allowed;
+    font-size: 0.85rem;
+  }
+  .tab-btn.disabled:hover { color: var(--ink-mute); }
 
-  @keyframes ddPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.3) inset; }
-    50% { transform: scale(1.02); box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.5) inset; }
-  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
 
-  @keyframes ddGleam {
-    0% { left: -100%; }
-    50% { left: 100%; }
-    100% { left: 100%; }
+  /* YOUR RANK CARD */
+  .your-rank {
+    background: var(--usa-blue);
+    color: white;
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 40, 104, 0.2);
   }
-
-  /* DAILY DOUBLE REVEAL CARD ANIMATION */
-  .dd-reveal-card {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0) rotateY(0deg);
-    z-index: 6000;
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: #1a1a1a;
-    padding: 40px 60px;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(255, 255, 255, 0.3) inset;
-    text-align: center;
-    pointer-events: none;
-    opacity: 0;
-  }
-  .dd-reveal-card.show {
-    animation: ddReveal 2.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-  .dd-reveal-card .dd-reveal-icon {
-    font-size: 4rem;
+  .your-rank.show { display: block; }
+  .your-rank-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 8px;
-    display: block;
   }
-  .dd-reveal-card .dd-reveal-title {
+  .your-rank-label {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+  .your-rank-num {
     font-family: var(--serif);
-    font-size: 2.2rem;
     font-weight: 900;
-    font-style: italic;
+    font-size: 2rem;
     line-height: 1;
   }
-  .dd-reveal-card .dd-reveal-sub {
-    font-size: 0.9rem;
-    margin-top: 8px;
-    opacity: 0.85;
+  .your-rank-score {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.4rem;
+  }
+  .your-rank-bottom {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-top: 4px;
   }
 
-  @keyframes ddReveal {
-    0% {
-      transform: translate(-50%, -50%) scale(0) rotateY(0deg);
-      opacity: 0;
-    }
-    15% {
-      transform: translate(-50%, -50%) scale(1.1) rotateY(360deg);
-      opacity: 1;
-    }
-    25% {
-      transform: translate(-50%, -50%) scale(1) rotateY(720deg);
-      opacity: 1;
-    }
-    75% {
-      transform: translate(-50%, -50%) scale(1) rotateY(720deg);
-      opacity: 1;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(0.5) rotateY(720deg);
-      opacity: 0;
-    }
-  }
-
-  /* DAILY DOUBLE MODAL */
-  .dd-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 5000;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .dd-modal.show { display: flex; }
-  .dd-content {
+  /* META INFO (theme + date) */
+  .meta-info {
     background: var(--paper);
-    border-radius: 20px;
-    padding: 24px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  .dd-header { text-align: center; margin-bottom: 20px; }
-  .dd-icon {
-    font-size: 3rem;
-    margin-bottom: 8px;
-    display: inline-block;
-    animation: ddBounce 1s ease-in-out infinite;
-  }
-  @keyframes ddBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
-  }
-  .dd-content h2 {
-    font-family: var(--serif);
-    font-size: 1.8rem;
-    margin-bottom: 8px;
-    font-style: italic;
-  }
-  .dd-subtitle {
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    line-height: 1.4;
-  }
-  .dd-current {
-    background: var(--cream);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
-    font-size: 0.95rem;
-  }
-  .dd-current strong {
-    font-family: var(--mono);
-    font-size: 1.3rem;
-    color: var(--usa-red);
-  }
-  .dd-input-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .dd-input-row input {
-    flex: 1;
-    padding: 14px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    font-size: 1.4rem;
-    font-weight: 700;
-    text-align: center;
-    font-family: var(--mono);
-    background: white;
-  }
-  .dd-max-btn {
-    background: var(--ink);
-    color: white;
-    border: none;
-    padding: 0 18px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .dd-quick-bets {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    margin-bottom: 20px;
-  }
-  .dd-quick-bets button {
-    background: white;
-    border: 1px solid var(--border);
-    padding: 10px 4px;
-    border-radius: 8px;
-    font-weight: 600;
     font-size: 0.85rem;
-    cursor: pointer;
   }
-  .dd-quick-bets button:hover { background: var(--cream); }
-  .dd-buttons {
-    display: flex;
-    gap: 10px;
+  .meta-theme {
+    font-weight: 600;
+    color: var(--ink);
   }
-  .dd-buttons button { flex: 1; }
-
-  /* DD active indicator */
-  .dd-active-indicator {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: #1a1a1a;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-weight: 700;
+  .meta-count {
+    color: var(--ink-soft);
     font-size: 0.8rem;
-    text-align: center;
-    margin-bottom: 10px;
   }
 
-  .btn-primary {
-    width: 100%;
+  /* LEADERBOARD */
+  .leaderboard {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .leaderboard-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .leaderboard-row:last-child { border-bottom: none; }
+  .leaderboard-row.is-me {
+    background: #fef3c7;
+    border-left: 4px solid var(--gold);
+    padding-left: 12px;
+  }
+
+  .rank {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 1.3rem;
+    min-width: 36px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .rank.gold { color: var(--gold); font-size: 1.5rem; }
+  .rank.silver { color: var(--silver); font-size: 1.4rem; }
+  .rank.bronze { color: var(--bronze); font-size: 1.4rem; }
+
+  .player-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .player-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .player-circles {
+    margin-top: 2px;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+  .player-me-tag {
+    display: inline-block;
+    background: var(--gold);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .score {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .score-num {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--ink);
+  }
+  .score-circles-mobile {
+    display: none;
+  }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .empty-emoji {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .empty h3 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+    color: var(--ink);
+    font-style: italic;
+  }
+  .empty p {
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+
+  /* LOADING */
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 4px solid var(--border);
+    border-top-color: var(--usa-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loading-text {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  /* CTA BUTTON */
+  .cta-btn {
     background: var(--usa-blue);
     color: white;
     border: none;
-    padding: 16px;
-    border-radius: 14px;
-    font-family: var(--sans);
-    font-size: 1rem;
+    padding: 12px 24px;
+    border-radius: 12px;
     font-weight: 700;
+    font-family: var(--sans);
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.15s;
-    letter-spacing: -0.01em;
     box-shadow: 0 4px 0 #001a4a;
-    position: relative;
-    top: 0;
+    margin-top: 12px;
   }
-  .btn-primary:active:not(:disabled) {
-    top: 2px;
+  .cta-btn:active {
+    transform: translateY(2px);
     box-shadow: 0 2px 0 #001a4a;
   }
-  .btn-primary:disabled {
-    background: #e8e0d0;
-    color: var(--ink-mute);
-    box-shadow: 0 4px 0 #d4ccba;
-    cursor: default;
-  }
 
-  .btn-secondary {
-    width: 100%;
-    background: var(--ink);
-    color: white;
-    border: none;
-    padding: 16px;
-    border-radius: 14px;
-    font-family: var(--sans);
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #000;
-    position: relative;
-    top: 0;
-    transition: all 0.15s;
-  }
-  .btn-secondary:active {
-    top: 2px;
-    box-shadow: 0 2px 0 #000;
-  }
-
-  /* ─── RESULT SHEET ─── */
-  #result-sheet {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--paper);
-    border-radius: 24px 24px 0 0;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-    padding: 20px 20px max(env(safe-area-inset-bottom), 20px);
-    z-index: 1500;
-    transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(.16,1,.3,1);
-  }
-  #result-sheet.show { transform: translateY(0); }
-
-  .sheet-handle {
-    width: 40px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 0 auto 16px;
-  }
-
-  .result-banner {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .result-emoji {
-    font-size: 2.4rem;
-    line-height: 1;
-  }
-  .result-text { flex: 1; }
-  .result-headline {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.1rem;
-    line-height: 1.15;
-    color: var(--ink);
-  }
-  .result-sub {
-    font-size: 0.78rem;
-    color: var(--ink-mute);
-    margin-top: 2px;
-  }
-
-  .result-points {
-    background: var(--ink);
-    color: var(--cream);
-    border-radius: 14px;
-    padding: 16px;
+  /* CACHE INDICATOR */
+  .cache-indicator {
     text-align: center;
-    margin-bottom: 14px;
-  }
-  .result-points-big {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 2.8rem;
-    line-height: 1;
-    color: var(--usa-red);
-  }
-  .result-points-label {
+    margin-top: 16px;
     font-size: 0.7rem;
     color: var(--ink-mute);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-top: 4px;
-    font-weight: 600;
-  }
-
-  .result-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .stat {
-    background: var(--cream);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-    border: 1px solid var(--border);
-  }
-  .stat-val {
-    font-family: var(--mono);
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--ink);
-  }
-  .stat-label {
-    font-size: 0.65rem;
-    color: var(--ink-mute);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-top: 2px;
-    font-weight: 600;
-  }
-
-  /* ─── SPLASH ─── */
-  /* ─── USERNAME MODAL ─── */
-  .username-modal {
-    position: fixed;
-    inset: 0;
-    background: var(--cream);
-    z-index: 5000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .username-modal.show { display: flex; }
-  .username-content {
-    background: var(--paper);
-    border-radius: 24px;
-    padding: 32px 24px;
-    max-width: 380px;
-    width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-    text-align: center;
-  }
-  .username-icon {
-    font-size: 3.5rem;
-    margin-bottom: 12px;
-  }
-  .username-content h2 {
-    font-family: var(--serif);
-    font-size: 1.8rem;
-    font-weight: 900;
-    font-style: italic;
-    margin-bottom: 8px;
-    line-height: 1.1;
-  }
-  .title-gradient { color: var(--usa-red); }
-  .username-subtitle {
-    color: var(--ink-soft);
-    font-size: 0.9rem;
-    margin-bottom: 24px;
-    line-height: 1.4;
-  }
-  .username-content label {
-    display: block;
-    text-align: left;
-    font-weight: 600;
-    font-size: 0.85rem;
-    margin-bottom: 6px;
-    color: var(--ink);
-  }
-  .username-content input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    font-family: var(--sans);
-    font-size: 1.05rem;
-    margin-bottom: 6px;
-    background: white;
-    text-align: center;
-    font-weight: 600;
-  }
-  .username-content input:focus {
-    outline: none;
-    border-color: var(--usa-blue);
-  }
-  .username-hint {
-    font-size: 0.75rem;
-    color: var(--ink-soft);
-    margin-bottom: 20px;
-    text-align: left;
-  }
-  .username-content .btn-primary {
-    width: 100%;
-  }
-  .username-error {
-    color: #dc2626;
-    font-size: 0.85rem;
-    margin-top: 12px;
-    font-weight: 600;
-    min-height: 1.2em;
-  }
-
-  /* ─── ALREADY PLAYED SCREEN ─── */
-  .already-played-screen {
-    position: fixed;
-    inset: 0;
-    background: var(--cream);
-    z-index: 4500;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    overflow-y: auto;
-  }
-  .already-played-screen.show { display: flex; }
-  .already-played-content {
-    max-width: 400px;
-    width: 100%;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .already-played-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--green);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-    font-weight: 900;
-    margin-bottom: 16px;
-    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
-  }
-  .already-played-content h2 {
-    font-family: var(--serif);
-    font-size: 1.8rem;
-    font-weight: 900;
-    font-style: italic;
-    margin-bottom: 6px;
-  }
-  .already-played-username {
-    color: var(--ink-soft);
-    font-size: 0.95rem;
-    margin-bottom: 24px;
-  }
-  .already-played-score-card {
-    background: var(--ink);
-    color: var(--cream);
-    border-radius: 20px;
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 20px;
-    width: 100%;
-    max-width: 320px;
-  }
-  .ap-score-label {
-    font-size: 0.7rem;
-    opacity: 0.7;
-    letter-spacing: 0.1em;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .ap-score-num {
-    font-family: var(--serif);
-    font-size: 3.5rem;
-    font-weight: 900;
-    line-height: 1;
-    margin-bottom: 12px;
-  }
-  .ap-circles {
-    font-size: 1.5rem;
-    letter-spacing: 4px;
-  }
-  .already-played-next {
-    color: var(--ink-soft);
-    font-size: 0.9rem;
-    margin-bottom: 8px;
-  }
-  .ap-countdown {
-    font-family: var(--mono);
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--usa-blue);
-    margin-bottom: 20px;
-  }
-
-  #splash {
-    position: absolute;
-    inset: 0;
-    background: var(--cream);
-    z-index: 3000;
-    display: none;
-    flex-direction: column;
-    padding: max(env(safe-area-inset-top), 16px) 20px max(env(safe-area-inset-bottom), 16px);
-    overflow-y: auto;
-  }
-  #splash.show { display: flex; }
-
-  .splash-top {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    text-align: center;
-    padding-top: 20px;
-  }
-
-  .splash-globe-wrap {
-    width: 120px;
-    height: 120px;
-    flex-shrink: 0;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-
-  .splash-globe {
-    width: 120px;
-    height: 120px;
-    display: block;
-    animation: spin 8s linear infinite;
-    filter: drop-shadow(0 8px 24px rgba(0,40,104,0.25));
-  }
-
-  @keyframes spin {
-    0% { transform: rotateY(0deg); }
-    100% { transform: rotateY(360deg); }
-  }
-
-  .splash-title {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 2.5rem;
-    letter-spacing: -0.04em;
-    line-height: 1;
-    color: var(--ink);
-    margin-bottom: 6px;
-    font-style: italic;
-  }
-  .splash-title span { color: var(--usa-red); }
-
-  .splash-theme {
-    font-family: var(--serif);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--ink-soft);
-    font-style: italic;
-    margin-bottom: 22px;
-    text-align: center;
-    line-height: 1.1;
-  }
-
-  .splash-rules {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-    max-width: 320px;
-  }
-  .rule {
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-align: left;
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    line-height: 1.3;
-  }
-  .rule-icon {
-    font-size: 1.2rem;
-    flex-shrink: 0;
-  }
-
-  .scoring-tiers {
-    width: 100%;
-    max-width: 320px;
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 14px;
-    margin-top: 10px;
-    margin-bottom: 16px;
-  }
-  .tier-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 0;
-    font-size: 0.8rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .tier-row:last-child { border-bottom: none; }
-  .tier-name {
-    font-weight: 600;
-    color: var(--ink);
-  }
-  .tier-range {
-    font-family: var(--mono);
-    color: var(--ink-soft);
-    font-size: 0.75rem;
-  }
-
-  /* ─── END SCREEN ─── */
-  #end-screen {
-    position: absolute;
-    inset: 0;
-    background: var(--cream);
-    z-index: 2500;
-    display: none;
-    flex-direction: column;
-    padding: max(env(safe-area-inset-top), 24px) 20px max(env(safe-area-inset-bottom), 20px);
-    overflow-y: auto;
-  }
-  #end-screen.show { display: flex; }
-
-  .end-top {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  .end-emoji { font-size: 4rem; margin-bottom: 8px; }
-  .end-title {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.6rem;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-    margin-bottom: 4px;
-    font-style: italic;
-  }
-  .end-subtitle {
-    font-size: 0.85rem;
-    color: var(--ink-mute);
-  }
-
-  .end-score-card {
-    background: var(--ink);
-    color: var(--cream);
-    border-radius: 20px;
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 18px;
-  }
-  .end-score-num {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 4.5rem;
-    line-height: 1;
-    transition: color 0.3s, text-shadow 0.3s;
-  }
-  .end-score-num.tier-red { color: #bf0a30; }
-  .end-score-num.tier-yellow { color: #eab308; }
-  .end-score-num.tier-green { color: #16a34a; }
-  .end-score-num.tier-platinum {
-    color: #e5e7eb;
-    background: linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e5e7eb 50%, #b8b8b8 75%, #d4d4d4 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    animation: platinumShine 3s ease-in-out infinite;
-  }
-  @keyframes platinumShine {
-    0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.2); }
-  }
-  .end-score-max {
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    color: var(--ink-mute);
-    margin-top: 6px;
-  }
-  .end-rank {
-    margin-top: 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .breakdown {
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 6px 14px;
-    margin-bottom: 16px;
-  }
-  .breakdown-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.85rem;
-    border-radius: 8px;
-    margin: 0 -12px;
-  }
-  .breakdown-row:last-child { border-bottom: none; }
-  
-  .breakdown-row.is-daily-double {
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
-    border: 1px solid #fbbf24;
-    border-bottom: 1px solid #fbbf24;
-    margin: 4px -12px;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
-  }
-  .br-dd-icon {
-    color: #f59e0b;
-    font-size: 0.9rem;
-    margin-left: 4px;
-  }
-  
-  .br-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-  .br-emoji { font-size: 1rem; flex-shrink: 0; }
-  .br-title { color: var(--ink); font-weight: 500; margin-bottom: 2px; }
-  .br-distance { display: block; font-size: 0.75rem; color: var(--ink-soft); }
-  .br-pts { font-family: var(--mono); font-size: 0.85rem; color: var(--ink); font-weight: 600; flex-shrink: 0; padding-left: 10px; }
-
-  /* ─── Map markers ─── */
-  .guess-pin {
-    width: 25px;
-    height: 25px;
-    background: var(--usa-red);
-    border: 2.7px solid white;
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    animation: pinDrop 0.4s cubic-bezier(.16,1,.3,1);
-    cursor: pointer;
-  }
-  .correct-pin {
-    width: 32px;
-    height: 32px;
-    background: var(--green);
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 4px 14px rgba(22,163,74,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    animation: pinDrop 0.4s cubic-bezier(.16,1,.3,1);
-  }
-  .correct-label {
-    background: var(--ink);
-    color: var(--cream);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 8px;
-    border-radius: 6px;
-    margin-top: 6px;
-    white-space: nowrap;
-    box-shadow: var(--shadow-lg);
-  }
-  @keyframes pinDrop {
-    0% { transform: translateY(-20px) scale(0.4) rotate(-45deg); opacity: 0; }
-    60% { transform: translateY(2px) scale(1.15) rotate(-45deg); opacity: 1; }
-    100% { transform: translateY(0) scale(1) rotate(-45deg); opacity: 1; }
-  }
-  .correct-pin {
-    animation-name: pinDropCircle;
-  }
-  @keyframes pinDropCircle {
-    0% { transform: translateY(-20px) scale(0.4); opacity: 0; }
-    60% { transform: translateY(2px) scale(1.15); opacity: 1; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
-  }
-
-  /* MapLibre attribution adjustments */
-  .maplibregl-ctrl-attrib {
-    background: rgba(255,251,243,0.85) !important;
-    font-size: 9px !important;
-  }
-  .maplibregl-ctrl-bottom-right {
-    margin-bottom: 8px !important;
   }
 </style>
 </head>
 <body>
-<div id="app">
-
-  <!-- USERNAME MODAL (first visit) -->
-  <div id="username-modal" class="username-modal">
-    <div class="username-content">
-      <div class="username-icon">🌍</div>
-      <h2>Welcome to <span class="title-gradient">GeoHistory</span></h2>
-      <p class="username-subtitle">Pick a username to track your scores and compete with friends.</p>
-      
-      <label>Username</label>
-      <input type="text" id="username-input" placeholder="e.g., trevor_p" maxlength="20" autocomplete="off" />
-      <div class="username-hint">3-20 characters. Letters, numbers, and underscores only.</div>
-      
-      <button class="btn-primary" id="username-submit" onclick="submitUsername()">Let's Play</button>
-      
-      <div id="username-error" class="username-error"></div>
-    </div>
+<div class="container">
+  
+  <div class="header">
+    <button class="header-back" onclick="window.location.href='/'">←</button>
+    <div class="header-title">Geo<span>History</span> Leaderboard</div>
   </div>
 
-  <!-- ALREADY PLAYED TODAY SCREEN -->
-  <div id="already-played" class="already-played-screen">
-    <div class="already-played-content">
-      <div class="already-played-icon">✓</div>
-      <h2>You've already played today!</h2>
-      <p class="already-played-username">Welcome back, <strong id="ap-username">player</strong></p>
-      
-      <div class="already-played-score-card">
-        <div class="ap-score-label">YOUR SCORE TODAY</div>
-        <div class="ap-score-num" id="ap-score">—</div>
-        <div class="ap-circles" id="ap-circles"></div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="today">Today</button>
+    <button class="tab-btn disabled" data-tab="alltime" disabled>All Time — Coming Soon</button>
+  </div>
+
+  <!-- YOUR RANK -->
+  <div class="your-rank" id="your-rank">
+    <div class="your-rank-top">
+      <div>
+        <div class="your-rank-label">Your Rank</div>
+        <div class="your-rank-num" id="rank-num">—</div>
       </div>
-      
-      <p class="already-played-next">Come back tomorrow for new questions!</p>
-      <div class="ap-countdown" id="ap-countdown">Next round in: —</div>
-      
-      <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px;">
-        <button class="btn-secondary" onclick="shareYesterday()">Share Score 📤</button>
-        <button class="btn-secondary" onclick="viewLeaderboard()">View Leaderboard 🏅</button>
+      <div>
+        <div class="your-rank-label" style="text-align: right;">Your Score</div>
+        <div class="your-rank-score" id="rank-score">—</div>
       </div>
     </div>
+    <div class="your-rank-bottom" id="rank-bottom">—</div>
   </div>
 
-  <!-- SPLASH -->
-  <div id="splash">
-    <div class="splash-top">
-      <div class="splash-globe-wrap">
-        <svg class="splash-globe" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <!-- Globe background (ocean) -->
-          <circle cx="100" cy="100" r="90" fill="#3b82f6"/>
-          
-          <!-- Continents (simplified) -->
-          <g fill="#16a34a">
-            <!-- North America -->
-            <path d="M 45 70 Q 50 60 60 65 L 75 70 Q 80 80 75 90 L 65 100 Q 55 95 50 85 Z"/>
-            <!-- South America -->
-            <path d="M 70 115 Q 75 110 80 115 L 82 130 Q 80 145 75 155 Q 70 150 68 140 Z"/>
-            <!-- Europe -->
-            <path d="M 100 65 Q 110 60 115 65 L 115 75 Q 110 80 105 78 Z"/>
-            <!-- Africa -->
-            <path d="M 105 85 Q 115 85 120 95 L 122 115 Q 115 130 108 130 Q 100 120 100 105 Z"/>
-            <!-- Asia -->
-            <path d="M 120 65 Q 135 60 150 70 L 155 85 Q 150 95 140 95 L 125 90 Q 118 80 120 70 Z"/>
-            <!-- Australia -->
-            <path d="M 140 130 Q 150 128 155 135 L 153 142 Q 145 144 140 140 Z"/>
-          </g>
-          
-          <!-- Latitude/longitude grid lines -->
-          <g stroke="#ffffff" stroke-width="0.5" fill="none" opacity="0.3">
-            <ellipse cx="100" cy="100" rx="90" ry="30"/>
-            <ellipse cx="100" cy="100" rx="90" ry="60"/>
-            <ellipse cx="100" cy="100" rx="60" ry="90"/>
-            <ellipse cx="100" cy="100" rx="30" ry="90"/>
-            <line x1="10" y1="100" x2="190" y2="100"/>
-            <line x1="100" y1="10" x2="100" y2="190"/>
-          </g>
-          
-          <!-- Highlight (3D effect) -->
-          <circle cx="100" cy="100" r="90" fill="url(#gradient)" opacity="0.3"/>
-          
-          <defs>
-            <radialGradient id="gradient" cx="35%" cy="35%">
-              <stop offset="0%" stop-color="#ffffff"/>
-              <stop offset="100%" stop-color="#000000"/>
-            </radialGradient>
-          </defs>
-        </svg>
-      </div>
-      <h1 class="splash-title">Geo<span>History</span></h1>
-      <p class="splash-theme" id="splash-theme">Business Through History</p>
-      <div class="splash-rules">
-        <div class="rule"><span class="rule-icon">📜</span><span>5 historical events, increasing in difficulty</span></div>
-        <div class="rule"><span class="rule-icon">⚡</span><span>One Daily Double per round</span></div>
-      </div>
-      <div class="scoring-tiers">
-        <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-25 mi</span></div>
-        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">25-100 mi</span></div>
-        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">100-200 mi</span></div>
-        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">200-999 mi</span></div>
-        <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">1000+ mi</span></div>
-      </div>
+  <!-- TODAY TAB -->
+  <div id="today" class="tab-content active">
+    <div class="meta-info" id="today-meta" style="display:none;">
+      <div class="meta-theme" id="today-theme">—</div>
+      <div class="meta-count" id="today-count">— players</div>
     </div>
-    <button class="btn-primary" onclick="startGame()">Start Game</button>
-  </div>
-
-  <!-- TOPBAR -->
-  <div id="topbar">
-    <div class="brand">Geo<span>History</span></div>
-    <div class="pip-row" id="pip-row"></div>
-    <div class="score-chip" id="score-chip">0</div>
-  </div>
-
-  <!-- MAP -->
-  <div id="map-wrap">
-    <div id="map"></div>
-
-    <div id="clue-card">
-      <div class="clue-header">
-        <div class="clue-meta">
-          <span class="q-tag" id="q-tag">Q1 / 5</span>
-          <span class="pts-tag" id="pts-tag">100 pts</span>
-        </div>
-        <button class="toggle-btn" onclick="toggleClue()">▼</button>
-      </div>
-      <div class="clue-title" id="clue-title">Loading…</div>
-      <div class="clue-body">
-        <div class="clue-year" id="clue-year"></div>
-        <div class="clue-text" id="clue-text"></div>
-      </div>
-    </div>
-
-    <div class="tap-hint" id="tap-hint">👆 Tap to drop pin</div>
-  </div>
-
-  <!-- ACTION BAR -->
-  <div id="action-bar">
-    <button class="dd-btn" id="dd-btn" onclick="openDailyDouble()" style="display:none;">⚡ Daily Double</button>
-    <button class="btn-primary" id="guess-btn" disabled>Drop a pin to guess</button>
-  </div>
-
-  <!-- DAILY DOUBLE MODAL -->
-  <!-- DAILY DOUBLE REVEAL ANIMATION -->
-  <div id="dd-reveal" class="dd-reveal-card">
-    <span class="dd-reveal-icon">⚡</span>
-    <div class="dd-reveal-title">Daily Double!</div>
-    <div class="dd-reveal-sub">Place your wager when ready</div>
-  </div>
-
-  <div id="dd-modal" class="dd-modal">
-    <div class="dd-content">
-      <div class="dd-header">
-        <div class="dd-icon">⚡</div>
-        <h2>Daily Double!</h2>
-        <p class="dd-subtitle">Wager any amount of your accumulated points. If your guess is within <strong>200 miles</strong> of the answer, you double your wager. Otherwise, you lose it.</p>
-      </div>
-      <div class="dd-current">
-        <span>Current Score:</span>
-        <strong id="dd-current-score">0</strong>
-      </div>
-      <label>Your Wager:</label>
-      <div class="dd-input-row">
-        <input type="number" id="dd-wager" min="0" value="0" />
-        <button class="dd-max-btn" onclick="dailyDoubleMax()">MAX</button>
-      </div>
-      <div class="dd-quick-bets">
-        <button onclick="setDDWager(25)">25%</button>
-        <button onclick="setDDWager(50)">50%</button>
-        <button onclick="setDDWager(75)">75%</button>
-        <button onclick="setDDWager(100)">All In</button>
-      </div>
-      <div class="dd-buttons">
-        <button class="btn-secondary" onclick="closeDailyDouble()">Cancel</button>
-        <button class="btn-primary" onclick="confirmDailyDouble()">Lock In Wager</button>
+    <div id="today-content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading today's leaderboard...</div>
       </div>
     </div>
   </div>
 
-  <!-- RESULT SHEET -->
-  <div id="result-sheet">
-    <div class="sheet-handle"></div>
-    <div class="result-banner">
-      <div class="result-emoji" id="res-emoji">🎯</div>
-      <div class="result-text">
-        <div class="result-headline" id="res-headline">Nice try!</div>
-        <div class="result-sub" id="res-sub">The answer was…</div>
+  <!-- ALL TIME TAB -->
+  <div id="alltime" class="tab-content">
+    <div class="meta-info" id="alltime-meta" style="display:none;">
+      <div class="meta-theme">Hall of Fame</div>
+      <div class="meta-count" id="alltime-count">— scores</div>
+    </div>
+    <div id="alltime-content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading all-time leaderboard...</div>
       </div>
-    </div>
-    <div class="result-points">
-      <div class="result-points-big" id="res-pts">0</div>
-      <div class="result-points-label">Points earned</div>
-    </div>
-    <div class="result-stats">
-      <div class="stat">
-        <div class="stat-val" id="res-dist">— km</div>
-        <div class="stat-label">Off by</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val" id="res-total">0</div>
-        <div class="stat-label">Total Score</div>
-      </div>
-    </div>
-    <button class="btn-secondary" id="next-btn" onclick="nextQuestion()">Next Question →</button>
-  </div>
-
-  <!-- END SCREEN -->
-  <div id="end-screen">
-    <div class="end-top">
-      <div class="end-emoji" id="end-emoji">🏆</div>
-      <div class="end-title" id="end-title">Game Complete</div>
-      <div class="end-subtitle">Here's how you did</div>
-    </div>
-    <div class="end-score-card">
-      <div class="end-score-num" id="final-score">0</div>
-      <div class="end-score-max" id="final-max" style="display:none;"></div>
-      <div class="end-rank" id="end-rank"></div>
-    </div>
-    <div class="breakdown" id="breakdown"></div>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      <button class="btn-primary" onclick="resetGame()">Play Again</button>
-      <button class="btn-secondary" onclick="shareScore()">Share Score 📤</button>
-      <button class="btn-secondary" onclick="viewLeaderboard()">View Leaderboard 🏅</button>
     </div>
   </div>
 
+  <div class="cache-indicator" id="cache-indicator"></div>
 </div>
 
 <script>
-// Initialize Supabase client first
-const supabaseClient = window.supabase.createClient(
+const supabase = window.supabase.createClient(
   'https://pmxmxfvtnosyyjkiwvim.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
 );
 
-// ═══════════════════════════════════════════════════════════════════════
-// USER MANAGEMENT & DAILY LIMIT
-// ═══════════════════════════════════════════════════════════════════════
+const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const $ = (id) => document.getElementById(id);
 
-// Get the current "game day" using 3 AM EST as the boundary
+// Get current game date (3 AM EST reset)
 function getGameDate() {
-  // Convert current time to EST (UTC-5) and offset by 3 hours
   const now = new Date();
   const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const estMs = utcMs - (5 * 60 * 60 * 1000); // EST = UTC-5
-  const adjusted = new Date(estMs - (3 * 60 * 60 * 1000)); // Shift back 3 hours
+  const estMs = utcMs - (5 * 60 * 60 * 1000);
+  const adjusted = new Date(estMs - (3 * 60 * 60 * 1000));
   return adjusted.toISOString().split('T')[0];
 }
 
-// Validate username format
-function validateUsername(username) {
-  if (!username) return 'Please enter a username';
-  if (username.length < 3) return 'Username must be at least 3 characters';
-  if (username.length > 20) return 'Username must be 20 characters or less';
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Only letters, numbers, and underscores allowed';
-  return null; // Valid
-}
-
-// Submit username (called from button click)
-async function submitUsername() {
-  const input = document.getElementById('username-input');
-  const errorEl = document.getElementById('username-error');
-  const submitBtn = document.getElementById('username-submit');
-  const username = input.value.trim();
-  
-  // Validate
-  const validationError = validateUsername(username);
-  if (validationError) {
-    errorEl.textContent = validationError;
-    return;
-  }
-  
-  errorEl.textContent = '';
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Checking...';
-  
+// Get cached data if fresh
+function getCached(key) {
   try {
-    // Check if username exists (case-insensitive)
-    const { data: existing } = await supabaseClient
-      .from('users')
-      .select('id, username, client_id')
-      .ilike('username', username)
-      .maybeSingle();
-    
-    let userId;
-    let clientId = localStorage.getItem('geo_client_id');
-    if (!clientId) {
-      clientId = 'client_' + Math.random().toString(36).slice(2, 11);
-    }
-    
-    if (existing) {
-      // Username taken - check if it belongs to this device
-      if (existing.client_id === clientId) {
-        userId = existing.id;
-      } else {
-        errorEl.textContent = 'Username is taken. Try another!';
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Let's Play";
-        return;
-      }
-    } else {
-      // Create new user
-      const { data: newUser, error } = await supabaseClient
-        .from('users')
-        .insert({
-          username: username,
-          client_id: clientId
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      userId = newUser.id;
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('geo_user_id', userId);
-    localStorage.setItem('geo_username', username);
-    localStorage.setItem('geo_client_id', clientId);
-    window.currentUserId = userId;
-    window.currentUsername = username;
-    
-    // Hide modal and check if they've played today
-    document.getElementById('username-modal').classList.remove('show');
-    await checkDailyPlay();
-    
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION_MS) return null;
+    return { data, timestamp };
   } catch (e) {
-    console.error('Username error:', e);
-    errorEl.textContent = 'Error: ' + e.message;
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Let's Play";
+    return null;
   }
 }
 
-// Check if user has played today
-async function checkDailyPlay() {
-  const userId = window.currentUserId;
-  const gameDate = getGameDate();
-  
+// Save to cache
+function setCache(key, data) {
   try {
-    const { data: todayScore } = await supabaseClient
-      .from('scores')
-      .select('total_score, question_details')
-      .eq('user_id', userId)
-      .eq('date', gameDate)
-      .maybeSingle();
-    
-    if (todayScore) {
-      // Already played - show the "already played" screen
-      showAlreadyPlayed(todayScore);
-    } else {
-      // First time today - show splash
-      showSplash();
-    }
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
   } catch (e) {
-    console.error('Daily check error:', e);
-    // If there's an error, just show splash
-    showSplash();
+    console.error('Cache write failed:', e);
   }
 }
 
-// Show the splash screen
-function showSplash() {
-  document.getElementById('splash').classList.add('show');
-  loadTodayTheme();
+// Format relative time
+function formatCacheTime(timestamp) {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ago`;
 }
 
-// Show "already played today" screen
-function showAlreadyPlayed(scoreData) {
-  document.getElementById('ap-username').textContent = window.currentUsername;
-  document.getElementById('ap-score').textContent = scoreData.total_score;
-  
-  // Build circles from question_details
-  if (scoreData.question_details && Array.isArray(scoreData.question_details)) {
-    const circles = scoreData.question_details.map(q => {
-      if (q.dailyDouble && q.dailyDouble.won) return '⚪';
-      if (q.distMiles <= 100) return '🟢';
-      if (q.distMiles <= 200) return '🟡';
-      return '🔴';
-    }).join('');
-    document.getElementById('ap-circles').textContent = circles;
-  }
-  
-  // Store for sharing
-  window.yesterdayScore = scoreData;
-  
-  // Start countdown to next game
-  updateCountdown();
-  setInterval(updateCountdown, 1000);
-  
-  document.getElementById('already-played').classList.add('show');
-}
-
-// Countdown timer to next 3 AM EST
-function updateCountdown() {
-  const now = new Date();
-  const nextReset = new Date();
-  
-  // Set to 3 AM EST (8 AM UTC during standard time)
-  nextReset.setUTCHours(8, 0, 0, 0);
-  
-  // If we're past 3 AM EST today, target tomorrow
-  if (now.getTime() >= nextReset.getTime()) {
-    nextReset.setUTCDate(nextReset.getUTCDate() + 1);
-  }
-  
-  const diff = nextReset.getTime() - now.getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  
-  const el = document.getElementById('ap-countdown');
-  if (el) {
-    el.textContent = `Next round in: ${hours}h ${minutes}m ${seconds}s`;
-  }
-}
-
-// Share yesterday's score (from already-played screen)
-function shareYesterday() {
-  if (!window.yesterdayScore) return;
-  
-  const score = window.yesterdayScore.total_score;
-  const details = window.yesterdayScore.question_details || [];
-  
-  const today = new Date();
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const day = today.getDate();
-  const suffix = (d) => {
-    if (d >= 11 && d <= 13) return 'th';
-    switch (d % 10) { case 1: return 'st'; case 2: return 'nd'; case 3: return 'rd'; default: return 'th'; }
-  };
-  const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
-  
-  const circles = details.map(q => {
+// Build score circles from question_details
+function buildCircles(details) {
+  if (!details || !Array.isArray(details)) return '';
+  return details.map(q => {
     if (q.dailyDouble && q.dailyDouble.won) return '⚪';
     if (q.distMiles <= 100) return '🟢';
     if (q.distMiles <= 200) return '🟡';
     return '🔴';
   }).join('');
-  
-  const shareText = `GeoHistory / ${dateStr}\n${score} pts\n${circles}\nPlay at playgeohistory.netlify.app`;
-  
-  if (navigator.share) {
-    navigator.share({
-      title: 'GeoHistory',
-      text: shareText,
-      url: 'https://playgeohistory.netlify.app'
-    }).catch(() => copyToClipboard(shareText));
-  } else {
-    copyToClipboard(shareText);
-  }
 }
 
-// Load today's theme on splash
-async function loadTodayTheme() {
-  try {
-    const gameDate = getGameDate();
-    const { data: round } = await supabaseClient
-      .from('daily_rounds')
-      .select('theme')
-      .eq('date', gameDate)
-      .single();
+// Get rank styling
+function getRankClass(rank) {
+  if (rank === 1) return 'gold';
+  if (rank === 2) return 'silver';
+  if (rank === 3) return 'bronze';
+  return '';
+}
+
+// Get rank prefix
+function getRankPrefix(rank) {
+  if (rank === 1) return '🥇';
+  if (rank === 2) return '🥈';
+  if (rank === 3) return '🥉';
+  return `#${rank}`;
+}
+
+// Render a leaderboard
+function renderLeaderboard(scores, currentUsername, container) {
+  if (!scores || scores.length === 0) return false;
+  
+  const html = scores.map((s, i) => {
+    const rank = i + 1;
+    const isMe = currentUsername && s.username && s.username.toLowerCase() === currentUsername.toLowerCase();
+    const circles = buildCircles(s.question_details);
     
-    if (round && round.theme) {
-      const themeEl = document.getElementById('splash-theme');
-      if (themeEl) themeEl.textContent = round.theme;
-    }
-  } catch (e) {
-    console.error('Error loading theme:', e);
-  }
-}
-
-// Main initialization - check for username on page load
-async function initApp() {
-  const savedUserId = localStorage.getItem('geo_user_id');
-  const savedUsername = localStorage.getItem('geo_username');
-  
-  if (savedUserId && savedUsername) {
-    // Returning user - check if they've played today
-    window.currentUserId = savedUserId;
-    window.currentUsername = savedUsername;
-    await checkDailyPlay();
-  } else {
-    // New user - show username modal
-    document.getElementById('username-modal').classList.add('show');
-    // Focus the input
-    setTimeout(() => {
-      const input = document.getElementById('username-input');
-      if (input) input.focus();
-    }, 100);
-  }
-  
-  // Allow Enter key to submit username
-  const usernameInput = document.getElementById('username-input');
-  if (usernameInput) {
-    usernameInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') submitUsername();
-    });
-  }
-}
-
-// Run on load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// GAME DATA
-// ═══════════════════════════════════════════════════════════════════════
-
-let QUESTIONS = [
-  {
-    year: "1971",
-    title: "Hello world",
-    clue: "The first microprocessor was designed and built in this 'valley' in 1971, sparking the digital revolution.",
-    answer: { lat: 37.3544, lng: -121.9692 },
-    location: "Santa Clara, CA",
-    emoji: "💻"
-  },
-  {
-    year: "1929",
-    title: "Black Tuesday",
-    clue: "The October 1929 crash occurred here, triggering a rapid banking collapse and the Great Depression.",
-    answer: { lat: 40.7069, lng: -74.0111 },
-    location: "New York, NY",
-    emoji: "📉"
-  },
-  {
-    year: "1440",
-    title: "Mass media",
-    clue: "Gutenberg's printing press (c. 1440) revolutionized mass production of books from this Rhineland capital.",
-    answer: { lat: 49.9929, lng: 8.2473 },
-    location: "Mainz, Germany",
-    emoji: "🖨️"
-  },
-  {
-    year: "1324",
-    title: "The richest man in history",
-    clue: "Mansa Musa, who once gave away so much gold he destabilized Egypt's economy, ran his empire from this ancient African capital.",
-    answer: { lat: 16.7735, lng: -3.0061 },
-    location: "Timbuktu, Mali",
-    emoji: "👑"
-  },
-  {
-    year: "1602",
-    title: "The world's first mega-corporation",
-    clue: "The Dutch East India Company (c. 1602) was estimated to be worth $10 trillion, employing 50,000+ people, headquartered in this Indian Ocean trade hub.",
-    answer: { lat: -6.1944, lng: 106.8229 },
-    location: "Jakarta, Indonesia",
-    emoji: "🏢"
-  }
-];
-
-const MAX_POINTS = [100, 100, 200, 300, 300];
-
-// Gradient-based scoring system (5% more forgiving)
-// Elite: 0-25 mi | Great: 25-100 mi | Good: 100-200 mi | Bad: 200-999 mi | None: 1000+ mi
-function scoreFor(distMiles, maxPts) {
-  let pct;
-  
-  if (distMiles <= 25) {
-    // Elite: 0-25 mi → 105% down to 84%
-    pct = 1.05 - (distMiles / 25) * 0.21;
-  } else if (distMiles <= 100) {
-    // Great: 25-100 mi → 84% down to 52.5%
-    pct = 0.84 - ((distMiles - 25) / 75) * 0.315;
-  } else if (distMiles <= 200) {
-    // Good: 100-200 mi → 52.5% down to 21%
-    pct = 0.525 - ((distMiles - 100) / 100) * 0.315;
-  } else if (distMiles <= 999) {
-    // Bad: 200-999 mi → 21% down to 1.05%
-    pct = 0.21 - ((distMiles - 200) / 799) * 0.1995;
-  } else {
-    // None: 1000+ mi → 0 points
-    pct = 0;
-  }
-  
-  return Math.round(maxPts * Math.max(pct, 0));
-}
-
-function tierFor(distMiles) {
-  if (distMiles <= 25) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
-  if (distMiles <= 100) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
-  if (distMiles <= 200) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
-  if (distMiles <= 999) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
-  return { name: 'Miss', emoji: '💀', color: '#dc2626' };
-}
-
-let currentQ = 0;
-let totalScore = 0;
-let breakdown = [];
-let guessLngLat = null;
-let guessed = false;
-let map;
-let guessMarker = null;
-let correctMarker = null;
-let lineSourceAdded = false;
-let currentUserId = null;
-
-// Daily Double state
-let dailyDoubleUsed = false;
-let dailyDoubleActive = false;
-let dailyDoubleWager = 0;
-let dailyDoubleQuestion = -1; // Which question gets the daily double (set at game start)
-
-const $ = id => document.getElementById(id);
-
-// ═══════════════════════════════════════════════════════════════════════
-// MAP INIT (MapLibre GL JS + ESRI World Imagery satellite tiles)
-// ═══════════════════════════════════════════════════════════════════════
-
-function initMap() {
-  map = new maplibregl.Map({
-    container: 'map',
-    style: {
-      version: 8,
-      sources: {
-        'satellite': {
-          type: 'raster',
-          tiles: [
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          ],
-          tileSize: 256,
-          maxzoom: 18,
-          attribution: 'Tiles © Esri'
-        }
-      },
-      layers: [
-        { id: 'satellite-layer', type: 'raster', source: 'satellite' }
-      ]
-    },
-    center: [-75, 38],
-    zoom: 4.2,
-    minZoom: 1,
-    maxZoom: 16,
-    attributionControl: false
-  });
-
-  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-
-  // Disable rotation — keeps mental model simple
-  map.dragRotate.disable();
-  map.touchZoomRotate.disableRotation();
-
-  // Tap to drop pin
-  map.on('click', (e) => {
-    if (guessed) return;
-    placeGuess(e.lngLat);
-  });
-
-  map.on('load', () => {
-    // Country borders (worldwide) — patriotic blue
-    map.addSource('countries', {
-      type: 'geojson',
-      data: 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson'
-    });
-    map.addLayer({
-      id: 'country-borders',
-      type: 'line',
-      source: 'countries',
-      paint: {
-        'line-color': '#ffffff',
-        'line-width': [
-          'interpolate', ['linear'], ['zoom'],
-          1, 0.6,
-          5, 1.4,
-          10, 2.2
-        ],
-        'line-opacity': 0.85
-      }
-    });
-
-    // US state borders — white dashed
-    map.addSource('us-states', {
-      type: 'geojson',
-      data: 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
-    });
-    map.addLayer({
-      id: 'us-state-borders',
-      type: 'line',
-      source: 'us-states',
-      paint: {
-        'line-color': '#ffffff',
-        'line-width': [
-          'interpolate', ['linear'], ['zoom'],
-          3, 0.5,
-          6, 1.2,
-          10, 1.8
-        ],
-        'line-opacity': 0.7,
-        'line-dasharray': [3, 2]
-      }
-    });
-
-    // Source for the connecting line between guess and correct answer
-    map.addSource('connector', {
-      type: 'geojson',
-      data: { type: 'FeatureCollection', features: [] }
-    });
-    map.addLayer({
-      id: 'connector-line',
-      type: 'line',
-      source: 'connector',
-      paint: {
-        'line-color': '#ffffff',
-        'line-width': 2.5,
-        'line-dasharray': [2, 2]
-      }
-    });
-    lineSourceAdded = true;
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// GAME
-// ═══════════════════════════════════════════════════════════════════════
-
-async function startGame() {
-  $('splash').classList.remove('show');
-  
-  // Randomize which question gets the daily double (Q2-Q5, i.e., index 1-4)
-  dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
-  console.log('Daily double scheduled for Q' + (dailyDoubleQuestion + 1));
-  
-  // Fetch today's round from Supabase
-  try {
-    const gameDate = getGameDate();
-    const { data: round, error } = await supabaseClient
-      .from('daily_rounds')
-      .select('question_ids, theme')
-      .eq('date', gameDate)
-      .single();
-    
-    if (error || !round) {
-      console.error('No round found for today, using default');
-    } else {
-      // Fetch the actual questions
-      const { data: questions } = await supabaseClient
-        .from('questions')
-        .select('*')
-        .in('id', round.question_ids);
-      
-      if (questions && questions.length > 0) {
-        // Sort questions to match the order in question_ids array
-        const orderedQuestions = round.question_ids
-          .map(id => questions.find(q => q.id === id))
-          .filter(q => q !== undefined);
-        
-        QUESTIONS = orderedQuestions.map(q => ({
-          year: q.year,
-          title: q.title,
-          clue: q.clue,
-          answer: { lat: q.answer_lat, lng: q.answer_lng },
-          location: q.location,
-          emoji: q.emoji
-        }));
-        
-        console.log('Loaded', QUESTIONS.length, 'questions for theme:', round.theme);
-      }
-    }
-  } catch (e) {
-    console.error('Error loading questions:', e);
-  }
-
-  initMap();
-  loadQuestion(0);
-}
-
-function loadQuestion(idx) {
-  const q = QUESTIONS[idx];
-  guessLngLat = null;
-  guessed = false;
-
-  // Clear markers
-  if (guessMarker) { guessMarker.remove(); guessMarker = null; }
-  if (correctMarker) { correctMarker.remove(); correctMarker = null; }
-
-  // Clear line
-  if (lineSourceAdded) {
-    map.getSource('connector').setData({ type: 'FeatureCollection', features: [] });
-  }
-
-  // Reset map view — focused on the Eastern US but wide enough to suggest world is in play
-  map.flyTo({ center: [-50, 40], zoom: 2.4, duration: 700 });
-
-  $('result-sheet').classList.remove('show');
-  $('clue-card').classList.remove('collapsed');
-  
-  // Only show tap hint on first question
-  if (idx === 0) {
-    $('tap-hint').classList.remove('hidden');
-  } else {
-    $('tap-hint').classList.add('hidden');
-  }
-
-  const btn = $('guess-btn');
-  btn.disabled = true;
-  btn.textContent = 'Drop a pin to guess';
-
-  // Show daily double button only on the randomized question (Q2-Q5)
-  const ddBtn = $('dd-btn');
-  if (idx === dailyDoubleQuestion && !dailyDoubleUsed) {
-    ddBtn.style.display = 'block';
-    ddBtn.textContent = '⚡ Daily Double Available!';
-    
-    // Trigger reveal animation
-    setTimeout(() => {
-      const reveal = $('dd-reveal');
-      reveal.classList.remove('show');
-      // Force reflow to restart animation
-      void reveal.offsetWidth;
-      reveal.classList.add('show');
-    }, 400);
-  } else {
-    ddBtn.style.display = 'none';
-  }
-  
-  // Reset daily double active state for new question
-  dailyDoubleActive = false;
-  dailyDoubleWager = 0;
-
-  $('q-tag').textContent = `Q${idx + 1} / 5`;
-  $('pts-tag').textContent = `${MAX_POINTS[idx]} pts`;
-  $('clue-title').textContent = q.title;
-  $('clue-year').textContent = q.year;
-  $('clue-text').textContent = q.clue;
-
-  updatePips();
-}
-
-function updatePips() {
-  const row = $('pip-row');
-  row.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
-    const p = document.createElement('div');
-    p.className = 'pip' + (i === currentQ ? ' active' : (i < currentQ ? ' done' : ''));
-    row.appendChild(p);
-  }
-}
-
-function toggleClue() {
-  $('clue-card').classList.toggle('collapsed');
-}
-
-function placeGuess(lngLat) {
-  guessLngLat = lngLat;
-
-  if (guessMarker) guessMarker.remove();
-
-  const el = document.createElement('div');
-  el.className = 'guess-pin';
-  guessMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-    .setLngLat(lngLat)
-    .addTo(map);
-
-  $('tap-hint').classList.add('hidden');
-  $('clue-card').classList.add('collapsed');
-
-  const btn = $('guess-btn');
-  btn.disabled = false;
-  btn.textContent = 'Lock in Guess  📍';
-}
-
-$('guess-btn').addEventListener('click', () => {
-  if (!guessLngLat || guessed) return;
-  submitGuess();
-});
-
-// Haversine distance in km
-function distanceKm(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const toRad = d => d * Math.PI / 180;
-  
-  // Handle dateline: take shortest path across ±180°
-  let dLng = lng2 - lng1;
-  if (dLng > 180) dLng -= 360;
-  if (dLng < -180) dLng += 360;
-  
-  const dLat = toRad(lat2 - lat1);
-  dLng = toRad(dLng);
-  
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function submitGuess() {
-  guessed = true;
-  const q = QUESTIONS[currentQ];
-  const distKm = distanceKm(guessLngLat.lat, guessLngLat.lng, q.answer.lat, q.answer.lng);
-  const distMiles = distKm * 0.621371;
-  const maxPts = MAX_POINTS[currentQ];
-  let pts = scoreFor(distMiles, maxPts);
-  const tier = tierFor(distMiles);
-
-  // Apply daily double if active
-  let ddResult = null;
-  if (dailyDoubleActive) {
-    // Win condition: within 200 miles (Elite, Great, or Good tier)
-    const ddWon = distMiles <= 200;
-    if (ddWon) {
-      pts = pts + dailyDoubleWager;
-      ddResult = { won: true, change: dailyDoubleWager };
-    } else {
-      pts = pts - dailyDoubleWager;
-      ddResult = { won: false, change: -dailyDoubleWager };
-    }
-  }
-
-  totalScore += pts;
-  breakdown.push({ 
-    title: q.title, 
-    pts, 
-    distMiles: Math.round(distMiles), 
-    emoji: q.emoji,
-    dailyDouble: dailyDoubleActive ? ddResult : null
-  });
-
-  // Drop correct marker
-  const correctEl = document.createElement('div');
-  correctEl.innerHTML = `
-    <div class="correct-pin">✓</div>
-    <div class="correct-label">${q.location}</div>
-  `;
-  correctEl.style.display = 'flex';
-  correctEl.style.flexDirection = 'column';
-  correctEl.style.alignItems = 'center';
-  correctMarker = new maplibregl.Marker({ element: correctEl, anchor: 'bottom' })
-    .setLngLat([q.answer.lng, q.answer.lat])
-    .addTo(map);
-
-  // Draw connector line (handle dateline crossing)
-  if (lineSourceAdded) {
-    let guessLng = guessLngLat.lng;
-    let answerLng = q.answer.lng;
-    
-    // If the line would cross more than 180°, adjust so it takes the short path
-    const lngDiff = answerLng - guessLng;
-    if (lngDiff > 180) {
-      answerLng -= 360;
-    } else if (lngDiff < -180) {
-      answerLng += 360;
-    }
-    
-    map.getSource('connector').setData({
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [guessLng, guessLngLat.lat],
-            [answerLng, q.answer.lat]
-          ]
-        }
-      }]
-    });
-  }
-
-  // Fit both points (adjust answer position for dateline if needed)
-  let fitAnswerLng = q.answer.lng;
-  const fitLngDiff = q.answer.lng - guessLngLat.lng;
-  if (fitLngDiff > 180) fitAnswerLng -= 360;
-  else if (fitLngDiff < -180) fitAnswerLng += 360;
-  const bounds = new maplibregl.LngLatBounds()
-    .extend([guessLngLat.lng, guessLngLat.lat])
-    .extend([fitAnswerLng, q.answer.lat]);
-  map.fitBounds(bounds, { padding: { top: 80, bottom: 280, left: 60, right: 60 }, maxZoom: 8, duration: 800 });
-
-  $('score-chip').textContent = totalScore;
-
-  $('res-emoji').textContent = tier.emoji;
-  $('res-headline').textContent = tier.name;
-  
-  // Show daily double result if applicable
-  if (ddResult) {
-    if (ddResult.won) {
-      $('res-sub').textContent = `⚡ Daily Double WON! +${ddResult.change} bonus. Answer: ${q.location}`;
-    } else {
-      $('res-sub').textContent = `⚡ Daily Double LOST. -${Math.abs(ddResult.change)} pts. Answer: ${q.location}`;
-    }
-  } else {
-    $('res-sub').textContent = `The answer: ${q.location}`;
-  }
-  
-  $('res-pts').textContent = pts;
-  $('res-pts').style.color = tier.color;
-  $('res-dist').textContent = `${Math.round(distMiles).toLocaleString()} mi`;
-  $('res-total').textContent = totalScore;
-
-  $('next-btn').textContent = currentQ === 4 ? 'See Final Score →' : 'Next Question →';
-
-  setTimeout(() => { $('result-sheet').classList.add('show'); }, 600);
-
-  updatePips();
-}
-
-function nextQuestion() {
-  $('result-sheet').classList.remove('show');
-  
-  // Remove daily double active indicator
-  const indicator = document.querySelector('.dd-active-indicator');
-  if (indicator) indicator.remove();
-  
-  currentQ++;
-  if (currentQ >= 5) {
-    setTimeout(showEndScreen, 300);
-    return;
-  }
-  setTimeout(() => loadQuestion(currentQ), 350);
-}
-
-function showEndScreen() {
-  const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
-  const pct = totalScore / maxTotal;
-  $('final-score').textContent = totalScore;
-  
-  // Apply color tier based on absolute score
-  const scoreEl = $('final-score');
-  scoreEl.classList.remove('tier-red', 'tier-yellow', 'tier-green', 'tier-platinum');
-  if (totalScore >= 1000) {
-    scoreEl.classList.add('tier-platinum');
-  } else if (totalScore >= 701) {
-    scoreEl.classList.add('tier-green');
-  } else if (totalScore >= 401) {
-    scoreEl.classList.add('tier-yellow');
-  } else {
-    scoreEl.classList.add('tier-red');
-  }
-
-  let rank, rankEmoji;
-  if (pct >= 0.85) { rank = 'Historian Supreme'; rankEmoji = '🏆'; }
-  else if (pct >= 0.65) { rank = 'Cartographer'; rankEmoji = '🗺️'; }
-  else if (pct >= 0.45) { rank = 'Globetrotter'; rankEmoji = '🌍'; }
-  else if (pct >= 0.2) { rank = 'Tourist'; rankEmoji = '🧭'; }
-  else { rank = 'Lost at Sea'; rankEmoji = '🚣'; }
-
-  $('end-emoji').textContent = rankEmoji;
-  $('end-title').textContent = rank;
-  $('end-rank').textContent = `${Math.round(pct * 100)}% accuracy`;
-
-  const br = $('breakdown');
-  br.innerHTML = breakdown.map((r, i) => {
-    const isDD = r.dailyDouble !== null && r.dailyDouble !== undefined;
-    const ddIcon = isDD ? '<span class="br-dd-icon">⚡</span>' : '';
     return `
-    <div class="breakdown-row ${isDD ? 'is-daily-double' : ''}">
-      <div class="br-left">
-        <span class="br-emoji">${r.emoji}</span>
-        <div>
-          <span class="br-title">${r.title} ${ddIcon}</span>
-          <span class="br-distance">${r.distMiles} mi off</span>
+      <div class="leaderboard-row ${isMe ? 'is-me' : ''}">
+        <div class="rank ${getRankClass(rank)}">${getRankPrefix(rank)}</div>
+        <div class="player-info">
+          <div class="player-name">
+            ${escapeHtml(s.username || 'Anonymous')}
+            ${isMe ? '<span class="player-me-tag">You</span>' : ''}
+          </div>
+          ${circles ? `<div class="player-circles">${circles}</div>` : ''}
+        </div>
+        <div class="score">
+          <div class="score-num">${s.total_score}</div>
         </div>
       </div>
-      <span class="br-pts">${r.pts}</span>
+    `;
+  }).join('');
+  
+  container.innerHTML = '<div class="leaderboard">' + html + '</div>';
+  return true;
+}
+
+// Render empty state
+function renderEmpty(container, message, showCTA) {
+  container.innerHTML = `
+    <div class="empty">
+      <span class="empty-emoji">🌍</span>
+      <h3>No scores yet</h3>
+      <p>${message}</p>
+      ${showCTA ? '<button class="cta-btn" onclick="window.location.href=\'/\'">Play Now</button>' : ''}
     </div>
-    `;
-  }).join('');
+  `;
+}
 
-  $('end-screen').classList.add('show');
+// Update your rank card
+function updateYourRank(scores, username, tabType) {
+  if (!username) return;
+  const myIndex = scores.findIndex(s => s.username && s.username.toLowerCase() === username.toLowerCase());
   
-  // Save score to database
-  saveScore(totalScore);
-}
-
-function resetGame() {
-  currentQ = 0;
-  totalScore = 0;
-  breakdown = [];
-  guessLngLat = null;
-  guessed = false;
-  
-  // Reset daily double state and re-randomize position
-  dailyDoubleUsed = false;
-  dailyDoubleActive = false;
-  dailyDoubleWager = 0;
-  dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
-
-  $('end-screen').classList.remove('show');
-  $('score-chip').textContent = '0';
-
-  loadQuestion(0);
-}
-
-// ─── DAILY DOUBLE FUNCTIONS ───
-function openDailyDouble() {
-  if (dailyDoubleUsed) return;
-  $('dd-current-score').textContent = totalScore;
-  $('dd-wager').value = Math.min(100, totalScore);
-  $('dd-wager').max = totalScore;
-  $('dd-modal').classList.add('show');
-}
-
-function closeDailyDouble() {
-  $('dd-modal').classList.remove('show');
-}
-
-function setDDWager(pct) {
-  const amount = Math.floor(totalScore * (pct / 100));
-  $('dd-wager').value = amount;
-}
-
-function dailyDoubleMax() {
-  $('dd-wager').value = totalScore;
-}
-
-function confirmDailyDouble() {
-  const wager = parseInt($('dd-wager').value);
-  
-  if (isNaN(wager) || wager < 0) {
-    alert('Please enter a valid wager amount');
+  if (myIndex === -1) {
+    $('your-rank').classList.remove('show');
     return;
   }
   
-  if (wager > totalScore) {
-    alert(`You can only wager up to ${totalScore} points`);
+  const myScore = scores[myIndex];
+  $('rank-num').textContent = `#${myIndex + 1}`;
+  $('rank-score').textContent = myScore.total_score;
+  $('rank-bottom').textContent = tabType === 'today' 
+    ? `out of ${scores.length} players today` 
+    : `out of ${scores.length} all-time`;
+  $('your-rank').classList.add('show');
+}
+
+// Load today's leaderboard
+async function loadToday() {
+  const gameDate = getGameDate();
+  const cacheKey = `leaderboard_today_${gameDate}`;
+  const username = localStorage.getItem('geo_username');
+  
+  // Check cache first
+  const cached = getCached(cacheKey);
+  if (cached) {
+    displayToday(cached.data, username);
+    $('cache-indicator').textContent = `Last updated ${formatCacheTime(cached.timestamp)} · refreshes every 15 min`;
     return;
   }
   
-  dailyDoubleActive = true;
-  dailyDoubleWager = wager;
-  dailyDoubleUsed = true;
-  
-  $('dd-modal').classList.remove('show');
-  $('dd-btn').style.display = 'none';
-  
-  // Show active indicator above guess button
-  const existingIndicator = document.querySelector('.dd-active-indicator');
-  if (existingIndicator) existingIndicator.remove();
-  
-  const indicator = document.createElement('div');
-  indicator.className = 'dd-active-indicator';
-  indicator.innerHTML = `⚡ Daily Double Active — Wagering ${wager} points`;
-  $('action-bar').insertBefore(indicator, $('guess-btn'));
-}
-
-// Save score to Supabase
-async function saveScore(finalScore) {
   try {
-    const gameDate = getGameDate();
+    // Fetch today's scores
+    const { data: scores, error } = await supabase
+      .from('scores')
+      .select('username, total_score, question_details, theme, created_at')
+      .eq('date', gameDate)
+      .order('total_score', { ascending: false })
+      .limit(100);
     
-    // Get current theme
-    let theme = 'GeoHistory';
-    try {
-      const themeEl = document.getElementById('splash-theme');
-      if (themeEl) theme = themeEl.textContent;
-    } catch(e) {}
+    if (error) throw error;
     
-    // Save one row per game with full details
-    await supabaseClient.from('scores').insert({
-      user_id: window.currentUserId,
-      username: window.currentUsername,
-      date: gameDate,
-      theme: theme,
-      total_score: finalScore,
-      max_possible: MAX_POINTS.reduce((a, b) => a + b, 0),
-      question_details: breakdown
-    });
-    
-    // Update user's last_play_date
-    await supabaseClient
-      .from('users')
-      .update({ 
-        last_play_date: gameDate,
-        last_played_at: new Date().toISOString(),
-        total_games: 1, // Will need to increment properly later
-        total_score: finalScore
-      })
-      .eq('id', window.currentUserId);
+    setCache(cacheKey, scores || []);
+    displayToday(scores || [], username);
+    $('cache-indicator').textContent = `Updated just now · refreshes every 15 min`;
   } catch (e) {
-    console.error('Error saving score:', e);
+    console.error('Today error:', e);
+    $('today-content').innerHTML = '<div class="empty"><h3>Couldn\'t load leaderboard</h3><p>Try again in a moment</p></div>';
   }
 }
 
-// Share score on Twitter
-function shareScore() {
-  const score = parseInt($('final-score').textContent);
-  const maxScore = MAX_POINTS.reduce((a, b) => a + b, 0);
+function displayToday(scores, username) {
+  const container = $('today-content');
   
-  // Format date as "May 21st"
-  const today = new Date();
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const day = today.getDate();
-  const suffix = (d) => {
-    if (d >= 11 && d <= 13) return 'th';
-    switch (d % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
-    }
-  };
-  const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
-  
-  // Build emoji circles based on each question's performance
-  // 🟢 green for Elite/Great, 🟡 yellow for Good, 🔴 red for Bad/Miss
-  // ⚪ platinum (white circle) for daily double won
-  const circles = breakdown.map((b, i) => {
-    // Daily double won = platinum
-    if (b.dailyDouble && b.dailyDouble.won) {
-      return '⚪';
-    }
-    // Score based on distance tiers
-    if (b.distMiles <= 100) return '🟢';  // Elite or Great
-    if (b.distMiles <= 200) return '🟡';  // Good
-    return '🔴';  // Bad or Miss
-  }).join('');
-  
-  // Build share text - single line URL so it stays in one message
-  const shareText = `GeoHistory / ${dateStr}
-${score} pts
-${circles}
-Play at playgeohistory.netlify.app`;
-
-  // Try native share first (mobile), then fall back to clipboard
-  if (navigator.share) {
-    navigator.share({
-      title: 'GeoHistory',
-      text: shareText,
-      url: 'https://playgeohistory.netlify.app'
-    }).catch(() => copyToClipboard(shareText));
-  } else {
-    copyToClipboard(shareText);
+  if (!scores || scores.length === 0) {
+    renderEmpty(container, 'Be the first to play today!', true);
+    $('today-meta').style.display = 'none';
+    $('your-rank').classList.remove('show');
+    return;
   }
+  
+  // Update meta info
+  $('today-meta').style.display = 'flex';
+  $('today-theme').textContent = scores[0].theme || 'Today\'s Round';
+  $('today-count').textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
+  
+  renderLeaderboard(scores, username, container);
+  updateYourRank(scores, username, 'today');
 }
 
-function copyToClipboard(text) {
-  // Try modern clipboard API
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      showShareToast('Copied to clipboard! 📋');
-    }).catch(() => {
-      fallbackCopy(text);
-    });
-  } else {
-    fallbackCopy(text);
+// Load all-time leaderboard
+async function loadAllTime() {
+  const cacheKey = 'leaderboard_alltime';
+  const username = localStorage.getItem('geo_username');
+  
+  const cached = getCached(cacheKey);
+  if (cached) {
+    displayAllTime(cached.data, username);
+    return;
   }
-}
-
-function fallbackCopy(text) {
-  // Fallback method using textarea
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  document.body.appendChild(textarea);
-  textarea.select();
+  
   try {
-    document.execCommand('copy');
-    showShareToast('Copied to clipboard! 📋');
+    // Fetch top 100 all-time scores
+    const { data: scores, error } = await supabase
+      .from('scores')
+      .select('username, total_score, question_details, theme, date')
+      .order('total_score', { ascending: false })
+      .limit(100);
+    
+    if (error) throw error;
+    
+    setCache(cacheKey, scores || []);
+    displayAllTime(scores || [], username);
   } catch (e) {
-    showShareToast('Copy failed — try manually');
+    console.error('All-time error:', e);
+    $('alltime-content').innerHTML = '<div class="empty"><h3>Couldn\'t load leaderboard</h3></div>';
   }
-  document.body.removeChild(textarea);
 }
 
-function showShareToast(message) {
-  let toast = document.getElementById('share-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'share-toast';
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1a1a1a;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 100px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      z-index: 9999;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      opacity: 0;
-      transition: opacity 0.3s;
-    `;
-    document.body.appendChild(toast);
+function displayAllTime(scores, username) {
+  const container = $('alltime-content');
+  
+  if (!scores || scores.length === 0) {
+    renderEmpty(container, 'No scores recorded yet.', true);
+    $('alltime-meta').style.display = 'none';
+    return;
   }
-  toast.textContent = message;
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+  
+  $('alltime-meta').style.display = 'flex';
+  $('alltime-count').textContent = `Top ${scores.length} scores`;
+  
+  renderLeaderboard(scores, username, container);
 }
 
-// Go to leaderboard
-function viewLeaderboard() {
-  window.location.href = '/leaderboard.html';
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('disabled')) return;
+    
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    $(btn.dataset.tab).classList.add('active');
+    
+    // Update rank card for the visible tab
+    const username = localStorage.getItem('geo_username');
+    if (btn.dataset.tab === 'today') {
+      const cached = getCached(`leaderboard_today_${getGameDate()}`);
+      if (cached) updateYourRank(cached.data, username, 'today');
+      else $('your-rank').classList.remove('show');
+    }
+  });
+});
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// Initialize (only today's leaderboard - All Time coming soon)
+loadToday();
 </script>
+
 </body>
 </html>
