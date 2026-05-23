@@ -434,9 +434,11 @@ function formatCacheTime(timestamp) {
 function buildCircles(details) {
   if (!details || !Array.isArray(details)) return '';
   return details.map(q => {
-    if (q.dailyDouble && q.dailyDouble.won) return '⚪';
-    if (q.distMiles <= 100) return '🟢';
-    if (q.distMiles <= 200) return '🟡';
+    if (q.dailyDouble) {
+      return q.dailyDouble.won ? '⚡' : '⚫';
+    }
+    if (q.distMiles <= 300) return '🟢';
+    if (q.distMiles <= 1200) return '🟡';
     return '🔴';
   }).join('');
 }
