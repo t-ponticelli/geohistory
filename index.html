@@ -1228,11 +1228,11 @@
         <div class="rule"><span class="rule-icon">⚡</span><span>One Daily Double per round</span></div>
       </div>
       <div class="scoring-tiers">
-        <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-25 mi</span></div>
-        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">25-100 mi</span></div>
-        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">100-200 mi</span></div>
-        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">200-999 mi</span></div>
-        <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">1000+ mi</span></div>
+        <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-100 mi</span></div>
+        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">100-300 mi</span></div>
+        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">300-1,200 mi</span></div>
+        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">1,200-5,000 mi</span></div>
+        <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">5,000+ mi</span></div>
       </div>
     </div>
     <button class="btn-primary" onclick="startGame()">Start Game</button>
@@ -1286,7 +1286,7 @@
       <div class="dd-header">
         <div class="dd-icon">⚡</div>
         <h2>Daily Double!</h2>
-        <p class="dd-subtitle">Wager any amount of your accumulated points. If your guess is within <strong>200 miles</strong> of the answer, you double your wager. Otherwise, you lose it.</p>
+        <p class="dd-subtitle">Wager any amount of your accumulated points. If your guess is within <strong>300 miles</strong> of the answer, you double your wager. Otherwise, you lose it.</p>
       </div>
       <div class="dd-current">
         <span>Current Score:</span>
@@ -1523,8 +1523,8 @@ function showAlreadyPlayed(scoreData) {
       if (q.dailyDouble) {
         return q.dailyDouble.won ? '⚡' : '⚫';
       }
-      if (q.distMiles <= 100) return '🟢';
-      if (q.distMiles <= 200) return '🟡';
+      if (q.distMiles <= 300) return '🟢';
+      if (q.distMiles <= 1200) return '🟡';
       return '🔴';
     }).join('');
     document.getElementById('ap-circles').textContent = circles;
@@ -1584,8 +1584,8 @@ function shareYesterday() {
     if (q.dailyDouble) {
       return q.dailyDouble.won ? '⚡' : '⚫';
     }
-    if (q.distMiles <= 100) return '🟢';
-    if (q.distMiles <= 200) return '🟡';
+    if (q.distMiles <= 300) return '🟢';
+    if (q.distMiles <= 1200) return '🟡';
     return '🔴';
   }).join('');
   
@@ -1707,25 +1707,40 @@ let QUESTIONS = [
 
 const MAX_POINTS = [100, 100, 200, 300, 300];
 
-// Gradient-based scoring system (5% more forgiving)
-// Elite: 0-25 mi | Great: 25-100 mi | Good: 100-200 mi | Bad: 200-999 mi | None: 1000+ mi
+// Gradient-based scoring system (smooth exponential decay)
+// Elite: 0-100 mi | Great: 100-300 mi | Good: 300-1200 mi | Bad: 1200-5000 mi | Miss: 5000+ mi
 function scoreFor(distMiles, maxPts) {
   let pct;
   
-  if (distMiles <= 25) {
-    // Elite: 0-25 mi → 105% down to 84%
-    pct = 1.05 - (distMiles / 25) * 0.21;
+  if (distMiles <= 50) {
+    // Elite: 0-50 mi → 100% down to 90%
+    pct = 1.00 - (distMiles / 50) * 0.10;
   } else if (distMiles <= 100) {
-    // Great: 25-100 mi → 84% down to 52.5%
-    pct = 0.84 - ((distMiles - 25) / 75) * 0.315;
-  } else if (distMiles <= 200) {
-    // Good: 100-200 mi → 52.5% down to 21%
-    pct = 0.525 - ((distMiles - 100) / 100) * 0.315;
-  } else if (distMiles <= 999) {
-    // Bad: 200-999 mi → 21% down to 1.05%
-    pct = 0.21 - ((distMiles - 200) / 799) * 0.1995;
+    // Elite: 50-100 mi → 90% down to 80%
+    pct = 0.90 - ((distMiles - 50) / 50) * 0.10;
+  } else if (distMiles <= 150) {
+    // Great: 100-150 mi → 80% down to 70%
+    pct = 0.80 - ((distMiles - 100) / 50) * 0.10;
+  } else if (distMiles <= 300) {
+    // Great: 150-300 mi → 70% down to 55%
+    pct = 0.70 - ((distMiles - 150) / 150) * 0.15;
+  } else if (distMiles <= 600) {
+    // Good: 300-600 mi → 55% down to 40%
+    pct = 0.55 - ((distMiles - 300) / 300) * 0.15;
+  } else if (distMiles <= 1200) {
+    // Good: 600-1200 mi → 40% down to 25%
+    pct = 0.40 - ((distMiles - 600) / 600) * 0.15;
+  } else if (distMiles <= 2500) {
+    // Bad: 1200-2500 mi → 25% down to 12%
+    pct = 0.25 - ((distMiles - 1200) / 1300) * 0.13;
+  } else if (distMiles <= 5000) {
+    // Bad: 2500-5000 mi → 12% down to 5%
+    pct = 0.12 - ((distMiles - 2500) / 2500) * 0.07;
+  } else if (distMiles <= 10000) {
+    // Miss: 5000-10000 mi → 5% down to 0%
+    pct = 0.05 - ((distMiles - 5000) / 5000) * 0.05;
   } else {
-    // None: 1000+ mi → 0 points
+    // Antipodal/Miss: 10000+ mi → 0 points
     pct = 0;
   }
   
@@ -1733,10 +1748,10 @@ function scoreFor(distMiles, maxPts) {
 }
 
 function tierFor(distMiles) {
-  if (distMiles <= 25) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
-  if (distMiles <= 100) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
-  if (distMiles <= 200) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
-  if (distMiles <= 999) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
+  if (distMiles <= 100) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
+  if (distMiles <= 300) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
+  if (distMiles <= 1200) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
+  if (distMiles <= 5000) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
   return { name: 'Miss', emoji: '💀', color: '#dc2626' };
 }
 
@@ -2053,8 +2068,8 @@ function submitGuess() {
   // Apply daily double if active
   let ddResult = null;
   if (dailyDoubleActive) {
-    // Win condition: within 200 miles (Elite, Great, or Good tier)
-    const ddWon = distMiles <= 200;
+    // Win condition: within 300 miles (Elite or Great tier)
+    const ddWon = distMiles <= 300;
     if (ddWon) {
       pts = pts + dailyDoubleWager;
       ddResult = { won: true, change: dailyDoubleWager };
@@ -2346,8 +2361,8 @@ function shareScore() {
     if (b.dailyDouble) {
       return b.dailyDouble.won ? '⚡' : '⚫';
     }
-    if (b.distMiles <= 100) return '🟢';
-    if (b.distMiles <= 200) return '🟡';
+    if (b.distMiles <= 300) return '🟢';
+    if (b.distMiles <= 1200) return '🟡';
     return '🔴';
   }).join('');
   
