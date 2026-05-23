@@ -1340,14 +1340,11 @@
   <!-- END SCREEN -->
   <div id="end-screen">
     <div class="end-top">
-      <div class="end-emoji" id="end-emoji">🏆</div>
-      <div class="end-title" id="end-title">Game Complete</div>
       <div class="end-subtitle">Here's how you did</div>
     </div>
     <div class="end-score-card">
       <div class="end-score-num" id="final-score">0</div>
       <div class="end-score-max" id="final-max" style="display:none;"></div>
-      <div class="end-rank" id="end-rank"></div>
     </div>
     <div class="breakdown" id="breakdown"></div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -2187,17 +2184,6 @@ function showEndScreen() {
   } else {
     scoreEl.classList.add('tier-red');
   }
-
-  let rank, rankEmoji;
-  if (pct >= 0.85) { rank = 'Historian Supreme'; rankEmoji = '🏆'; }
-  else if (pct >= 0.65) { rank = 'Cartographer'; rankEmoji = '🗺️'; }
-  else if (pct >= 0.45) { rank = 'Globetrotter'; rankEmoji = '🌍'; }
-  else if (pct >= 0.2) { rank = 'Tourist'; rankEmoji = '🧭'; }
-  else { rank = 'Lost at Sea'; rankEmoji = '🚣'; }
-
-  $('end-emoji').textContent = rankEmoji;
-  $('end-title').textContent = rank;
-  $('end-rank').textContent = `${Math.round(pct * 100)}% accuracy`;
 
   const br = $('breakdown');
   br.innerHTML = breakdown.map((r, i) => {
