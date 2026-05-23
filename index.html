@@ -1382,6 +1382,20 @@ function getGameDate() {
   return adjusted.toISOString().split('T')[0];
 }
 
+// Determine which question gets the daily double based on the game date
+// Returns the same question index (1-4) for all users playing on the same day
+function getDailyDoubleQuestion() {
+  const gameDate = getGameDate();
+  // Create a simple hash from the date string
+  let hash = 0;
+  for (let i = 0; i < gameDate.length; i++) {
+    hash = ((hash << 5) - hash) + gameDate.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  // Map to Q2-Q5 (index 1-4)
+  return Math.abs(hash) % 4 + 1;
+}
+
 // Validate username format
 function validateUsername(username) {
   if (!username) return 'Please enter a username';
@@ -1508,7 +1522,10 @@ function showAlreadyPlayed(scoreData) {
   // Build circles from question_details
   if (scoreData.question_details && Array.isArray(scoreData.question_details)) {
     const circles = scoreData.question_details.map(q => {
-      if (q.dailyDouble && q.dailyDouble.won) return '⚪';
+      // Daily Double: won = lightning bolt, lost = black dot
+      if (q.dailyDouble) {
+        return q.dailyDouble.won ? '⚡' : '⚫';
+      }
       if (q.distMiles <= 100) return '🟢';
       if (q.distMiles <= 200) return '🟡';
       return '🔴';
@@ -1567,13 +1584,15 @@ function shareYesterday() {
   const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
   
   const circles = details.map(q => {
-    if (q.dailyDouble && q.dailyDouble.won) return '⚪';
+    if (q.dailyDouble) {
+      return q.dailyDouble.won ? '⚡' : '⚫';
+    }
     if (q.distMiles <= 100) return '🟢';
     if (q.distMiles <= 200) return '🟡';
     return '🔴';
   }).join('');
   
-  const shareText = `GeoHistory / ${dateStr}\n${score} pts\n${circles}\nPlay at playgeohistory.netlify.app`;
+  const shareText = `GeoHistory / ${dateStr}\n${score} pts\n${circles}\nplaygeohistory.netlify.app`;
   
   if (navigator.share) {
     navigator.share({
@@ -1857,8 +1876,9 @@ function initMap() {
 async function startGame() {
   $('splash').classList.remove('show');
   
-  // Randomize which question gets the daily double (Q2-Q5, i.e., index 1-4)
-  dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
+  // Determine which question gets the daily double based on the game date
+  // This ensures everyone playing on the same day gets the daily double on the same question
+  dailyDoubleQuestion = getDailyDoubleQuestion();
   console.log('Daily double scheduled for Q' + (dailyDoubleQuestion + 1));
   
   // Fetch today's round from Supabase
@@ -2214,7 +2234,8 @@ function resetGame() {
   dailyDoubleUsed = false;
   dailyDoubleActive = false;
   dailyDoubleWager = 0;
-  dailyDoubleQuestion = Math.floor(Math.random() * 4) + 1;
+  // Use the same deterministic daily double position
+  dailyDoubleQuestion = getDailyDoubleQuestion();
 
   $('end-screen').classList.remove('show');
   $('score-chip').textContent = '0';
@@ -2333,24 +2354,22 @@ function shareScore() {
   const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
   
   // Build emoji circles based on each question's performance
-  // 🟢 green for Elite/Great, 🟡 yellow for Good, 🔴 red for Bad/Miss
-  // ⚪ platinum (white circle) for daily double won
+  // 🟢 green = Elite/Great (0-100mi), 🟡 yellow = Good (100-200mi), 🔴 red = Bad/Miss
+  // ⚡ lightning = Daily Double WON, ⚫ black dot = Daily Double LOST
   const circles = breakdown.map((b, i) => {
-    // Daily double won = platinum
-    if (b.dailyDouble && b.dailyDouble.won) {
-      return '⚪';
+    if (b.dailyDouble) {
+      return b.dailyDouble.won ? '⚡' : '⚫';
     }
-    // Score based on distance tiers
-    if (b.distMiles <= 100) return '🟢';  // Elite or Great
-    if (b.distMiles <= 200) return '🟡';  // Good
-    return '🔴';  // Bad or Miss
+    if (b.distMiles <= 100) return '🟢';
+    if (b.distMiles <= 200) return '🟡';
+    return '🔴';
   }).join('');
   
   // Build share text - single line URL so it stays in one message
   const shareText = `GeoHistory / ${dateStr}
 ${score} pts
 ${circles}
-Play at playgeohistory.netlify.app`;
+playgeohistory.netlify.app`;
 
   // Try native share first (mobile), then fall back to clipboard
   if (navigator.share) {
