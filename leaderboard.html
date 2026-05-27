@@ -527,15 +527,26 @@ async function loadToday() {
   const cacheKey = `leaderboard_today_${gameDate}`;
   const username = localStorage.getItem('geo_username');
   
+  console.log('Loading leaderboard for date:', gameDate);
+  
   // Check cache first
   const cached = getCached(cacheKey);
   if (cached) {
+    console.log('Using cached data');
     displayToday(cached.data, username);
     $('cache-indicator').textContent = `Last updated ${formatCacheTime(cached.timestamp)} · refreshes every 15 min`;
     return;
   }
   
+  // Set a timeout fallback so we never hang
+  const timeoutId = setTimeout(() => {
+    console.error('Query timed out');
+    $('today-content').innerHTML = '<div class="empty"><span class="empty-emoji">⚠️</span><h3>Loading timeout</h3><p>The database query took too long. Try refreshing.</p><button class="cta-btn" onclick="location.reload()">Refresh</button></div>';
+  }, 10000); // 10 second timeout
+  
   try {
+    console.log('Querying Supabase...');
+    
     // Fetch today's scores
     const { data: scores, error } = await supabase
       .from('scores')
@@ -544,14 +555,22 @@ async function loadToday() {
       .order('total_score', { ascending: false })
       .limit(100);
     
-    if (error) throw error;
+    clearTimeout(timeoutId);
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
+    console.log('Query result:', scores?.length || 0, 'scores found');
     
     setCache(cacheKey, scores || []);
     displayToday(scores || [], username);
     $('cache-indicator').textContent = `Updated just now · refreshes every 15 min`;
   } catch (e) {
+    clearTimeout(timeoutId);
     console.error('Today error:', e);
-    $('today-content').innerHTML = '<div class="empty"><h3>Couldn\'t load leaderboard</h3><p>Try again in a moment</p></div>';
+    $('today-content').innerHTML = `<div class="empty"><span class="empty-emoji">⚠️</span><h3>Couldn't load leaderboard</h3><p>${escapeHtml(e.message || 'Unknown error')}</p><button class="cta-btn" onclick="location.reload()">Try Again</button></div>`;
   }
 }
 
