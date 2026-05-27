@@ -1225,14 +1225,13 @@
       <p class="splash-theme" id="splash-theme">💀 Deads of State</p>
       <div class="splash-rules">
         <div class="rule"><span class="rule-icon">📜</span><span>5 historical events, increasing in difficulty</span></div>
-        <div class="rule"><span class="rule-icon">⚡</span><span>One Daily Double per round</span></div>
       </div>
       <div class="scoring-tiers">
-        <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-100 mi</span></div>
-        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">100-300 mi</span></div>
-        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">300-1,200 mi</span></div>
-        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">1,200-5,000 mi</span></div>
-        <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">5,000+ mi</span></div>
+        <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-30 mi</span></div>
+        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">30-100 mi</span></div>
+        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">100-750 mi</span></div>
+        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">750-3,000 mi</span></div>
+        <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">3,000+ mi</span></div>
       </div>
     </div>
     <button class="btn-primary" onclick="startGame()">Start Game</button>
@@ -1382,15 +1381,8 @@ function getGameDate() {
 // Determine which question gets the daily double based on the game date
 // Returns the same question index (1-4) for all users playing on the same day
 function getDailyDoubleQuestion() {
-  const gameDate = getGameDate();
-  // Create a simple hash from the date string
-  let hash = 0;
-  for (let i = 0; i < gameDate.length; i++) {
-    hash = ((hash << 5) - hash) + gameDate.charCodeAt(i);
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  // Map to Q2-Q5 (index 1-4)
-  return Math.abs(hash) % 4 + 1;
+  // Daily Double is DISABLED for now while we refine the mechanic
+  return -1;
 }
 
 // Validate username format
@@ -1523,9 +1515,10 @@ function showAlreadyPlayed(scoreData) {
       if (q.dailyDouble) {
         return q.dailyDouble.won ? '⚡' : '⚫';
       }
-      if (q.distMiles <= 300) return '🟢';
-      if (q.distMiles <= 1200) return '🟡';
-      return '🔴';
+      if (q.distMiles <= 30) return '🎯';   // Elite
+      if (q.distMiles <= 100) return '🟢';  // Great
+      if (q.distMiles <= 750) return '🟡';  // Good
+      return '🔴';                            // Bad/Miss
     }).join('');
     document.getElementById('ap-circles').textContent = circles;
   }
@@ -1584,8 +1577,9 @@ function shareYesterday() {
     if (q.dailyDouble) {
       return q.dailyDouble.won ? '⚡' : '⚫';
     }
-    if (q.distMiles <= 300) return '🟢';
-    if (q.distMiles <= 1200) return '🟡';
+    if (q.distMiles <= 30) return '🎯';
+    if (q.distMiles <= 100) return '🟢';
+    if (q.distMiles <= 750) return '🟡';
     return '🔴';
   }).join('');
   
@@ -1712,35 +1706,23 @@ const MAX_POINTS = [100, 100, 200, 300, 300];
 function scoreFor(distMiles, maxPts) {
   let pct;
   
-  if (distMiles <= 50) {
-    // Elite: 0-50 mi → 100% down to 90%
-    pct = 1.00 - (distMiles / 50) * 0.10;
+  if (distMiles <= 30) {
+    // Elite: 0-30 mi → 100% down to 88%
+    pct = 1.00 - (distMiles / 30) * 0.12;
   } else if (distMiles <= 100) {
-    // Elite: 50-100 mi → 90% down to 80%
-    pct = 0.90 - ((distMiles - 50) / 50) * 0.10;
-  } else if (distMiles <= 150) {
-    // Great: 100-150 mi → 80% down to 70%
-    pct = 0.80 - ((distMiles - 100) / 50) * 0.10;
-  } else if (distMiles <= 300) {
-    // Great: 150-300 mi → 70% down to 55%
-    pct = 0.70 - ((distMiles - 150) / 150) * 0.15;
-  } else if (distMiles <= 600) {
-    // Good: 300-600 mi → 55% down to 40%
-    pct = 0.55 - ((distMiles - 300) / 300) * 0.15;
-  } else if (distMiles <= 1200) {
-    // Good: 600-1200 mi → 40% down to 25%
-    pct = 0.40 - ((distMiles - 600) / 600) * 0.15;
-  } else if (distMiles <= 2500) {
-    // Bad: 1200-2500 mi → 25% down to 12%
-    pct = 0.25 - ((distMiles - 1200) / 1300) * 0.13;
-  } else if (distMiles <= 5000) {
-    // Bad: 2500-5000 mi → 12% down to 5%
-    pct = 0.12 - ((distMiles - 2500) / 2500) * 0.07;
+    // Great: 30-100 mi → 88% down to 65%
+    pct = 0.88 - ((distMiles - 30) / 70) * 0.23;
+  } else if (distMiles <= 750) {
+    // Good: 100-750 mi → 65% down to 30%
+    pct = 0.65 - ((distMiles - 100) / 650) * 0.35;
+  } else if (distMiles <= 3000) {
+    // Bad: 750-3000 mi → 30% down to 10%
+    pct = 0.30 - ((distMiles - 750) / 2250) * 0.20;
   } else if (distMiles <= 10000) {
-    // Miss: 5000-10000 mi → 5% down to 0%
-    pct = 0.05 - ((distMiles - 5000) / 5000) * 0.05;
+    // Miss: 3000-10000 mi → 10% down to 0%
+    pct = 0.10 - ((distMiles - 3000) / 7000) * 0.10;
   } else {
-    // Antipodal/Miss: 10000+ mi → 0 points
+    // Antipodal: 10000+ mi → 0 points
     pct = 0;
   }
   
@@ -1748,10 +1730,10 @@ function scoreFor(distMiles, maxPts) {
 }
 
 function tierFor(distMiles) {
-  if (distMiles <= 100) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
-  if (distMiles <= 300) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
-  if (distMiles <= 1200) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
-  if (distMiles <= 5000) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
+  if (distMiles <= 30) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
+  if (distMiles <= 100) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
+  if (distMiles <= 750) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
+  if (distMiles <= 3000) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
   return { name: 'Miss', emoji: '💀', color: '#dc2626' };
 }
 
@@ -2355,14 +2337,15 @@ function shareScore() {
   const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
   
   // Build emoji circles based on each question's performance
-  // 🟢 green = Elite/Great (0-100mi), 🟡 yellow = Good (100-200mi), 🔴 red = Bad/Miss
-  // ⚡ lightning = Daily Double WON, ⚫ black dot = Daily Double LOST
+  // 🎯 Elite (0-100mi), 🟢 Great (100-300mi), 🟡 Good (300-1200mi), 🔴 Bad/Miss (1200+mi)
+  // ⚡ Daily Double WON, ⚫ Daily Double LOST
   const circles = breakdown.map((b, i) => {
     if (b.dailyDouble) {
       return b.dailyDouble.won ? '⚡' : '⚫';
     }
-    if (b.distMiles <= 300) return '🟢';
-    if (b.distMiles <= 1200) return '🟡';
+    if (b.distMiles <= 30) return '🎯';
+    if (b.distMiles <= 100) return '🟢';
+    if (b.distMiles <= 750) return '🟡';
     return '🔴';
   }).join('');
   
