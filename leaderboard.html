@@ -437,8 +437,9 @@ function buildCircles(details) {
     if (q.dailyDouble) {
       return q.dailyDouble.won ? '⚡' : '⚫';
     }
-    if (q.distMiles <= 300) return '🟢';
-    if (q.distMiles <= 1200) return '🟡';
+    if (q.distMiles <= 30) return '🎯';
+    if (q.distMiles <= 100) return '🟢';
+    if (q.distMiles <= 750) return '🟡';
     return '🔴';
   }).join('');
 }
