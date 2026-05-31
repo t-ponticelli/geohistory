@@ -1228,9 +1228,9 @@
       </div>
       <div class="scoring-tiers">
         <div class="tier-row"><span class="tier-name">🎯 Elite</span><span class="tier-range">0-30 mi</span></div>
-        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">30-100 mi</span></div>
-        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">100-750 mi</span></div>
-        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">750-3,000 mi</span></div>
+        <div class="tier-row"><span class="tier-name">🔥 Great</span><span class="tier-range">30-250 mi</span></div>
+        <div class="tier-row"><span class="tier-name">👍 Good</span><span class="tier-range">250-900 mi</span></div>
+        <div class="tier-row"><span class="tier-name">😅 Bad</span><span class="tier-range">900-3,000 mi</span></div>
         <div class="tier-row"><span class="tier-name">💀 Miss</span><span class="tier-range">3,000+ mi</span></div>
       </div>
     </div>
@@ -1516,8 +1516,8 @@ function showAlreadyPlayed(scoreData) {
         return q.dailyDouble.won ? '⚡' : '⚫';
       }
       if (q.distMiles <= 30) return '🎯';   // Elite
-      if (q.distMiles <= 100) return '🟢';  // Great
-      if (q.distMiles <= 750) return '🟡';  // Good
+      if (q.distMiles <= 250) return '🟢';  // Great
+      if (q.distMiles <= 900) return '🟡';  // Good
       return '🔴';                            // Bad/Miss
     }).join('');
     document.getElementById('ap-circles').textContent = circles;
@@ -1578,8 +1578,8 @@ function shareYesterday() {
       return q.dailyDouble.won ? '⚡' : '⚫';
     }
     if (q.distMiles <= 30) return '🎯';
-    if (q.distMiles <= 100) return '🟢';
-    if (q.distMiles <= 750) return '🟡';
+    if (q.distMiles <= 250) return '🟢';
+    if (q.distMiles <= 900) return '🟡';
     return '🔴';
   }).join('');
   
@@ -1709,20 +1709,17 @@ function scoreFor(distMiles, maxPts) {
   if (distMiles <= 30) {
     // Elite: 0-30 mi → 100% down to 88%
     pct = 1.00 - (distMiles / 30) * 0.12;
-  } else if (distMiles <= 100) {
-    // Great: 30-100 mi → 88% down to 65%
-    pct = 0.88 - ((distMiles - 30) / 70) * 0.23;
-  } else if (distMiles <= 750) {
-    // Good: 100-750 mi → 65% down to 30%
-    pct = 0.65 - ((distMiles - 100) / 650) * 0.35;
+  } else if (distMiles <= 250) {
+    // Great: 30-250 mi → 88% down to 55%
+    pct = 0.88 - ((distMiles - 30) / 220) * 0.33;
+  } else if (distMiles <= 900) {
+    // Good: 250-900 mi → 55% down to 25%
+    pct = 0.55 - ((distMiles - 250) / 650) * 0.30;
   } else if (distMiles <= 3000) {
-    // Bad: 750-3000 mi → 30% down to 10%
-    pct = 0.30 - ((distMiles - 750) / 2250) * 0.20;
-  } else if (distMiles <= 10000) {
-    // Miss: 3000-10000 mi → 10% down to 0%
-    pct = 0.10 - ((distMiles - 3000) / 7000) * 0.10;
+    // Bad: 900-3000 mi → 25% down to 5%
+    pct = 0.25 - ((distMiles - 900) / 2100) * 0.20;
   } else {
-    // Antipodal: 10000+ mi → 0 points
+    // Miss: 3000+ mi → 0 points (hard cutoff)
     pct = 0;
   }
   
@@ -1731,8 +1728,8 @@ function scoreFor(distMiles, maxPts) {
 
 function tierFor(distMiles) {
   if (distMiles <= 30) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
-  if (distMiles <= 100) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
-  if (distMiles <= 750) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
+  if (distMiles <= 250) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
+  if (distMiles <= 900) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
   if (distMiles <= 3000) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
   return { name: 'Miss', emoji: '💀', color: '#dc2626' };
 }
@@ -2344,8 +2341,8 @@ function shareScore() {
       return b.dailyDouble.won ? '⚡' : '⚫';
     }
     if (b.distMiles <= 30) return '🎯';
-    if (b.distMiles <= 100) return '🟢';
-    if (b.distMiles <= 750) return '🟡';
+    if (b.distMiles <= 250) return '🟢';
+    if (b.distMiles <= 900) return '🟡';
     return '🔴';
   }).join('');
   
