@@ -1511,14 +1511,21 @@ function showAlreadyPlayed(scoreData) {
   // Build circles from question_details
   if (scoreData.question_details && Array.isArray(scoreData.question_details)) {
     const circles = scoreData.question_details.map(q => {
-      // Daily Double: won = lightning bolt, lost = black dot
       if (q.dailyDouble) {
         return q.dailyDouble.won ? '⚡' : '⚫';
       }
-      if (q.distMiles <= 30) return '🎯';   // Elite
-      if (q.distMiles <= 250) return '🟢';  // Great
-      if (q.distMiles <= 900) return '🟡';  // Good
-      return '🔴';                            // Bad/Miss
+      // Use saved tier if available (handles international vs domestic)
+      if (q.tierName) {
+        if (q.tierName === 'Elite') return '🎯';
+        if (q.tierName === 'Great') return '🟢';
+        if (q.tierName === 'Good') return '🟡';
+        return '🔴';
+      }
+      // Fallback for old saved scores: use domestic thresholds
+      if (q.distMiles <= 30) return '🎯';
+      if (q.distMiles <= 250) return '🟢';
+      if (q.distMiles <= 900) return '🟡';
+      return '🔴';
     }).join('');
     document.getElementById('ap-circles').textContent = circles;
   }
@@ -1576,6 +1583,12 @@ function shareYesterday() {
   const circles = details.map(q => {
     if (q.dailyDouble) {
       return q.dailyDouble.won ? '⚡' : '⚫';
+    }
+    if (q.tierName) {
+      if (q.tierName === 'Elite') return '🎯';
+      if (q.tierName === 'Great') return '🟢';
+      if (q.tierName === 'Good') return '🟡';
+      return '🔴';
     }
     if (q.distMiles <= 30) return '🎯';
     if (q.distMiles <= 250) return '🟢';
@@ -1703,30 +1716,62 @@ const MAX_POINTS = [100, 100, 200, 300, 300];
 
 // Gradient-based scoring system (smooth exponential decay)
 // Elite: 0-100 mi | Great: 100-300 mi | Good: 300-1200 mi | Bad: 1200-5000 mi | Miss: 5000+ mi
+// International round flag (set from daily_rounds.is_international)
+let isInternationalRound = false;
+
 function scoreFor(distMiles, maxPts) {
   let pct;
   
-  if (distMiles <= 30) {
-    // Elite: 0-30 mi → 100% down to 88%
-    pct = 1.00 - (distMiles / 30) * 0.12;
-  } else if (distMiles <= 250) {
-    // Great: 30-250 mi → 88% down to 55%
-    pct = 0.88 - ((distMiles - 30) / 220) * 0.33;
-  } else if (distMiles <= 900) {
-    // Good: 250-900 mi → 55% down to 25%
-    pct = 0.55 - ((distMiles - 250) / 650) * 0.30;
-  } else if (distMiles <= 3000) {
-    // Bad: 900-3000 mi → 25% down to 5%
-    pct = 0.25 - ((distMiles - 900) / 2100) * 0.20;
+  if (isInternationalRound) {
+    // INTERNATIONAL SCORING (more forgiving)
+    // Elite: 0-75 | Great: 75-500 | Good: 500-1800 | Bad: 1800-5000 | Miss: 5000+
+    if (distMiles <= 75) {
+      // Elite: 0-75 mi → 100% down to 92%
+      pct = 1.00 - (distMiles / 75) * 0.08;
+    } else if (distMiles <= 500) {
+      // Great: 75-500 mi → 92% down to 60%
+      pct = 0.92 - ((distMiles - 75) / 425) * 0.32;
+    } else if (distMiles <= 1800) {
+      // Good: 500-1800 mi → 60% down to 30%
+      pct = 0.60 - ((distMiles - 500) / 1300) * 0.30;
+    } else if (distMiles <= 5000) {
+      // Bad: 1800-5000 mi → 30% down to 5%
+      pct = 0.30 - ((distMiles - 1800) / 3200) * 0.25;
+    } else {
+      // Miss: 5000+ mi → 0 points
+      pct = 0;
+    }
   } else {
-    // Miss: 3000+ mi → 0 points (hard cutoff)
-    pct = 0;
+    // DOMESTIC SCORING (default, tighter)
+    if (distMiles <= 30) {
+      // Elite: 0-30 mi → 100% down to 90%
+      pct = 1.00 - (distMiles / 30) * 0.10;
+    } else if (distMiles <= 250) {
+      // Great: 30-250 mi → 90% down to 55%
+      pct = 0.90 - ((distMiles - 30) / 220) * 0.35;
+    } else if (distMiles <= 900) {
+      // Good: 250-900 mi → 55% down to 25%
+      pct = 0.55 - ((distMiles - 250) / 650) * 0.30;
+    } else if (distMiles <= 3000) {
+      // Bad: 900-3000 mi → 25% down to 5%
+      pct = 0.25 - ((distMiles - 900) / 2100) * 0.20;
+    } else {
+      // Miss: 3000+ mi → 0 points
+      pct = 0;
+    }
   }
   
   return Math.round(maxPts * Math.max(pct, 0));
 }
 
 function tierFor(distMiles) {
+  if (isInternationalRound) {
+    if (distMiles <= 75) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
+    if (distMiles <= 500) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
+    if (distMiles <= 1800) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
+    if (distMiles <= 5000) return { name: 'Bad', emoji: '😅', color: '#ff7a45' };
+    return { name: 'Miss', emoji: '💀', color: '#dc2626' };
+  }
   if (distMiles <= 30) return { name: 'Elite', emoji: '🎯', color: '#16a34a' };
   if (distMiles <= 250) return { name: 'Great', emoji: '🔥', color: '#16a34a' };
   if (distMiles <= 900) return { name: 'Good', emoji: '👍', color: '#ff7a45' };
@@ -1877,13 +1922,17 @@ async function startGame() {
     const gameDate = getGameDate();
     const { data: round, error } = await supabaseClient
       .from('daily_rounds')
-      .select('question_ids, theme')
+      .select('question_ids, theme, is_international')
       .eq('date', gameDate)
       .single();
     
     if (error || !round) {
       console.error('No round found for today, using default');
     } else {
+      // Set international scoring flag
+      isInternationalRound = round.is_international === true;
+      console.log('International round?', isInternationalRound);
+      
       // Fetch the actual questions
       const { data: questions } = await supabaseClient
         .from('questions')
@@ -2064,6 +2113,7 @@ function submitGuess() {
     pts, 
     distMiles: Math.round(distMiles), 
     emoji: q.emoji,
+    tierName: tier.name, // Save tier so share circles can match scoring
     dailyDouble: dailyDoubleActive ? ddResult : null
   });
 
@@ -2334,11 +2384,17 @@ function shareScore() {
   const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
   
   // Build emoji circles based on each question's performance
-  // 🎯 Elite (0-100mi), 🟢 Great (100-300mi), 🟡 Good (300-1200mi), 🔴 Bad/Miss (1200+mi)
+  // 🎯 Elite, 🟢 Great, 🟡 Good, 🔴 Bad/Miss
   // ⚡ Daily Double WON, ⚫ Daily Double LOST
   const circles = breakdown.map((b, i) => {
     if (b.dailyDouble) {
       return b.dailyDouble.won ? '⚡' : '⚫';
+    }
+    if (b.tierName) {
+      if (b.tierName === 'Elite') return '🎯';
+      if (b.tierName === 'Great') return '🟢';
+      if (b.tierName === 'Good') return '🟡';
+      return '🔴';
     }
     if (b.distMiles <= 30) return '🎯';
     if (b.distMiles <= 250) return '🟢';
