@@ -194,6 +194,13 @@
       <div class="selected-count" id="selectedCount">0 / 5 selected</div>
       <div class="checkbox-list" id="schQuestionList">Loading...</div>
 
+      <div style="margin-top: 16px; padding: 12px; background: #fef7ed; border: 1px solid #e8dfd0; border-radius: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem; margin: 0;">
+          <input type="checkbox" id="schInternational" style="width: 18px; height: 18px;" />
+          <span>🌍 <strong>International theme</strong> — applies easier scoring (Elite: 0-75 mi, Great: 75-500 mi, etc.)</span>
+        </label>
+      </div>
+
       <div class="row" style="margin-top: 16px;">
         <button class="btn btn-primary" onclick="saveSchedule()">💾 Save Schedule</button>
         <button class="btn btn-secondary" onclick="loadSchedule()">↻ Load Existing</button>
@@ -489,10 +496,12 @@ async function loadSchedule() {
       s.style.display = 'none';
     });
     $('schTheme').value = '';
+    $('schInternational').checked = false;
     updateSelectedCount();
     return;
   }
   $('schTheme').value = data.theme;
+  $('schInternational').checked = data.is_international === true;
   
   // Check the boxes and assign order based on position in array
   document.querySelectorAll('#schQuestionList input[type="checkbox"]').forEach(cb => {
@@ -547,9 +556,11 @@ async function saveSchedule() {
   // Sort by order and extract IDs
   selectedItems.sort((a, b) => a.order - b.order);
   const orderedIds = selectedItems.map(item => item.qid);
+  
+  const isInternational = $('schInternational').checked;
 
   const { error } = await sb.from('daily_rounds').upsert({
-    date, theme, question_ids: orderedIds, status: 'active'
+    date, theme, question_ids: orderedIds, status: 'active', is_international: isInternational
   }, { onConflict: 'date' });
 
   if (error) showStatus('schStatus', 'Error: ' + error.message, 'error');
