@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#fef7ed">
+<title>My Stats · GeoHistory</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #fef7ed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1a1a1a;
+    padding: 16px 12px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 500px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .back-btn {
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.3rem;
+    text-decoration: none;
+    color: #1a1a1a;
+    flex-shrink: 0;
+  }
+  h1 {
+    font-family: ui-serif, Georgia, serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    flex: 1;
+  }
+  h1 span { color: #bf0a30; }
+
+  /* TABS */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e8dfd0;
+  }
+  .tab-link {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 8px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    text-decoration: none;
+    text-align: center;
+  }
+  .tab-link.active {
+    color: #002868;
+    border-bottom-color: #002868;
+  }
+
+  /* USERNAME HEADER */
+  .username-display {
+    background: #002868;
+    color: white;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .username-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+    font-weight: 600;
+  }
+  .username-name {
+    font-family: ui-serif, Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin-top: 4px;
+  }
+
+  /* SECTION HEADER */
+  .section-title {
+    font-family: ui-serif, Georgia, serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #1a1a1a;
+  }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .stat-card.full {
+    grid-column: span 2;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-family: ui-serif, Georgia, serif;
+    font-weight: 900;
+    font-size: 1.8rem;
+    line-height: 1;
+    color: #1a1a1a;
+  }
+  .stat-sub {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  /* RECENT SCORES */
+  .recent-list {
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .recent-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e8dfd0;
+    font-size: 0.9rem;
+  }
+  .recent-row:last-child { border-bottom: none; }
+  .recent-day {
+    width: 90px;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .recent-theme {
+    flex: 1;
+    color: #666;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .recent-score {
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* STATES */
+  .status {
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+  }
+  .status .big { font-size: 2.5rem; margin-bottom: 10px; }
+  .status h3 {
+    font-family: ui-serif, Georgia, serif;
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+    color: #1a1a1a;
+    font-style: italic;
+  }
+  .status p { font-size: 0.9rem; margin-bottom: 14px; }
+  .play-btn {
+    background: #002868;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <a href="/" class="back-btn">←</a>
+    <h1>Geo<span>History</span></h1>
+  </div>
+
+  <div class="tab-nav">
+    <a href="/leaderboard.html" class="tab-link">🏆 Leaderboard</a>
+    <a href="/stats.html" class="tab-link active">📊 My Stats</a>
+  </div>
+
+  <div id="content">
+    <div class="status">
+      <div class="big">⏳</div>
+      <h3>Loading your stats...</h3>
+    </div>
+  </div>
+</div>
+
+<script>
+const sb = window.supabase.createClient(
+  'https://pmxmxfvtnosyyjkiwvim.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
+);
+
+const $ = (id) => document.getElementById(id);
+
+function getGameDate(offset = 0) {
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const estMs = utcMs - (5 * 60 * 60 * 1000);
+  const adjusted = new Date(estMs - (3 * 60 * 60 * 1000));
+  adjusted.setUTCDate(adjusted.getUTCDate() + offset);
+  return adjusted.toISOString().split('T')[0];
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatDayLabel(dateStr) {
+  const today = getGameDate(0);
+  const yesterday = getGameDate(-1);
+  if (dateStr === today) return 'Today';
+  if (dateStr === yesterday) return 'Yesterday';
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// Calculate current streak from sorted score dates (most recent first)
+function calculateStreak(scoreDates) {
+  if (!scoreDates || scoreDates.length === 0) return 0;
+  
+  const today = getGameDate(0);
+  const yesterday = getGameDate(-1);
+  
+  // Streak must include today or yesterday to be "current"
+  if (scoreDates[0] !== today && scoreDates[0] !== yesterday) return 0;
+  
+  let streak = 1;
+  let prevDate = scoreDates[0];
+  
+  for (let i = 1; i < scoreDates.length; i++) {
+    const expectedDate = new Date(prevDate + 'T12:00:00Z');
+    expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
+    const expected = expectedDate.toISOString().split('T')[0];
+    
+    if (scoreDates[i] === expected) {
+      streak++;
+      prevDate = scoreDates[i];
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+async function loadStats() {
+  const username = localStorage.getItem('geo_username');
+  
+  if (!username) {
+    $('content').innerHTML = `
+      <div class="status">
+        <div class="big">👋</div>
+        <h3>No account yet</h3>
+        <p>Play your first round to start tracking your stats!</p>
+        <a href="/" class="play-btn">Play Now</a>
+      </div>
+    `;
+    return;
+  }
+  
+  console.log('Loading stats for', username);
+  
+  const timeoutId = setTimeout(() => {
+    $('content').innerHTML = `
+      <div class="status">
+        <div class="big">⏱️</div>
+        <h3>Loading too slow</h3>
+        <button class="play-btn" onclick="loadStats()">Try Again</button>
+      </div>
+    `;
+  }, 8000);
+  
+  try {
+    // Fetch ALL scores for this user (we need them for best-ever)
+    const { data: allScores, error } = await sb
+      .from('scores')
+      .select('total_score, date, theme')
+      .ilike('username', username)
+      .order('date', { ascending: false });
+    
+    clearTimeout(timeoutId);
+    
+    if (error) {
+      $('content').innerHTML = `
+        <div class="status">
+          <div class="big">⚠️</div>
+          <h3>Database error</h3>
+          <p>${escapeHtml(error.message)}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    if (!allScores || allScores.length === 0) {
+      $('content').innerHTML = `
+        <div class="username-display">
+          <div class="username-label">Player</div>
+          <div class="username-name">${escapeHtml(username)}</div>
+        </div>
+        <div class="status">
+          <div class="big">🌍</div>
+          <h3>No games yet</h3>
+          <p>Play your first round to start tracking your stats!</p>
+          <a href="/" class="play-btn">Play Now</a>
+        </div>
+      `;
+      return;
+    }
+    
+    // Calculate weekly window (last 7 days)
+    const sevenDaysAgo = getGameDate(-6); // 7 days inclusive (today + 6 prior)
+    const weekScores = allScores.filter(s => s.date >= sevenDaysAgo);
+    
+    // Weekly average
+    let weeklyAvg = '—';
+    if (weekScores.length > 0) {
+      weeklyAvg = Math.round(weekScores.reduce((a, s) => a + s.total_score, 0) / weekScores.length);
+    }
+    
+    // Weekly high (with theme)
+    let weeklyHigh = null;
+    if (weekScores.length > 0) {
+      weeklyHigh = weekScores.reduce((max, s) => s.total_score > max.total_score ? s : max);
+    }
+    
+    // Best ever (with theme + date)
+    const bestEver = allScores.reduce((max, s) => s.total_score > max.total_score ? s : max);
+    
+    // Current streak
+    const scoreDates = allScores.map(s => s.date);
+    const uniqueDates = [...new Set(scoreDates)]; // de-dupe in case
+    uniqueDates.sort().reverse(); // most recent first
+    const streak = calculateStreak(uniqueDates);
+    
+    // Recent scores (last 7 days)
+    const recentRows = weekScores.slice(0, 7).map(s => `
+      <div class="recent-row">
+        <div class="recent-day">${formatDayLabel(s.date)}</div>
+        <div class="recent-theme">${escapeHtml(s.theme || '—')}</div>
+        <div class="recent-score">${s.total_score}</div>
+      </div>
+    `).join('');
+    
+    $('content').innerHTML = `
+      <div class="username-display">
+        <div class="username-label">Player</div>
+        <div class="username-name">${escapeHtml(username)}</div>
+      </div>
+      
+      <div class="section-title">📅 Last 7 Days</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Average</div>
+          <div class="stat-value">${weeklyAvg}</div>
+          <div class="stat-sub">${weekScores.length} ${weekScores.length === 1 ? 'game' : 'games'}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Streak</div>
+          <div class="stat-value">${streak} 🔥</div>
+          <div class="stat-sub">${streak === 1 ? 'day' : 'days'}</div>
+        </div>
+        ${weeklyHigh ? `
+          <div class="stat-card full">
+            <div class="stat-label">Weekly High</div>
+            <div class="stat-value">${weeklyHigh.total_score}</div>
+            <div class="stat-sub">${escapeHtml(weeklyHigh.theme || '—')} · ${formatDayLabel(weeklyHigh.date)}</div>
+          </div>
+        ` : ''}
+      </div>
+      
+      <div class="section-title">🏆 All-Time Best</div>
+      <div class="stats-grid">
+        <div class="stat-card full">
+          <div class="stat-label">Best Ever Score</div>
+          <div class="stat-value">${bestEver.total_score}</div>
+          <div class="stat-sub">${escapeHtml(bestEver.theme || '—')} · ${formatDayLabel(bestEver.date)}</div>
+        </div>
+      </div>
+      
+      ${recentRows ? `
+        <div class="section-title">📜 Recent Scores</div>
+        <div class="recent-list">${recentRows}</div>
+      ` : ''}
+    `;
+    
+  } catch (e) {
+    clearTimeout(timeoutId);
+    $('content').innerHTML = `
+      <div class="status">
+        <div class="big">⚠️</div>
+        <h3>Error</h3>
+        <p>${escapeHtml(e.message || String(e))}</p>
+      </div>
+    `;
+  }
+}
+
+loadStats();
+</script>
+</body>
+</html>
