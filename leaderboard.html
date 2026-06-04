@@ -207,7 +207,7 @@
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+const sb = window.supabase.createClient(
   'https://pmxmxfvtnosyyjkiwvim.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBteG14ZnZ0bm9zeXlqa2l3dmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjU5MTIsImV4cCI6MjA5NDcwMTkxMn0.bQKytFaCAvDX7i8kkqfvkZOQTbGHZyAPQC--1JF1B2c'
 );
@@ -242,29 +242,51 @@ async function loadLeaderboard() {
   const gameDate = getGameDate();
   const username = (localStorage.getItem('geo_username') || '').toLowerCase();
   
-  console.log('Loading leaderboard for', gameDate);
+  console.log('=== LEADERBOARD LOAD ===');
+  console.log('Game date:', gameDate);
+  console.log('Username:', username);
+  
+  // Timeout fallback so it never hangs forever
+  const timeoutId = setTimeout(() => {
+    console.error('Leaderboard query timed out');
+    $('content').innerHTML = `
+      <div class="status">
+        <div class="big">⏱️</div>
+        <h3>Loading too slow</h3>
+        <p>The database is taking longer than 8 seconds.</p>
+        <button class="play-btn" onclick="loadLeaderboard()">Try Again</button>
+      </div>
+    `;
+    refreshBtn.disabled = false;
+  }, 8000);
   
   try {
-    const { data: scores, error } = await supabase
+    console.log('Querying Supabase...');
+    
+    const { data: scores, error } = await sb
       .from('scores')
       .select('username, total_score, theme')
       .eq('date', gameDate)
       .order('total_score', { ascending: false })
       .limit(100);
     
+    clearTimeout(timeoutId);
+    
     if (error) {
-      console.error('DB error:', error);
+      console.error('Supabase error:', error);
       $('content').innerHTML = `
         <div class="status">
           <div class="big">⚠️</div>
-          <h3>Couldn't load</h3>
-          <p>${escapeHtml(error.message)}</p>
+          <h3>Database error</h3>
+          <p>${escapeHtml(error.message || 'Unknown error')}</p>
+          <button class="play-btn" onclick="loadLeaderboard()">Try Again</button>
         </div>
       `;
+      refreshBtn.disabled = false;
       return;
     }
     
-    console.log('Got', scores?.length || 0, 'scores');
+    console.log('Got', scores?.length || 0, 'scores:', scores);
     
     if (!scores || scores.length === 0) {
       $('meta').style.display = 'none';
@@ -276,15 +298,18 @@ async function loadLeaderboard() {
           <a href="/" class="play-btn">Play Now</a>
         </div>
       `;
+      const now = new Date();
+      $('last-updated').textContent = `Last checked ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+      refreshBtn.disabled = false;
       return;
     }
     
-    // Update meta
+    // Show meta info
     $('meta').style.display = 'flex';
-    $('theme').textContent = scores[0].theme || 'Today';
+    $('theme').textContent = scores[0].theme || 'Today\'s Round';
     $('count').textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
     
-    // Render leaderboard
+    // Render rows
     const rows = scores.map((s, i) => {
       const rank = i + 1;
       const rankDisplay = getRankDisplay(rank);
@@ -303,17 +328,18 @@ async function loadLeaderboard() {
     
     $('content').innerHTML = `<div class="leaderboard">${rows}</div>`;
     
-    // Last updated time
     const now = new Date();
     $('last-updated').textContent = `Last updated ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
     
   } catch (e) {
-    console.error('Unexpected error:', e);
+    clearTimeout(timeoutId);
+    console.error('Caught error:', e);
     $('content').innerHTML = `
       <div class="status">
         <div class="big">⚠️</div>
         <h3>Something went wrong</h3>
-        <p>${escapeHtml(e.message || 'Unknown error')}</p>
+        <p>${escapeHtml(e.message || String(e))}</p>
+        <button class="play-btn" onclick="loadLeaderboard()">Try Again</button>
       </div>
     `;
   } finally {
