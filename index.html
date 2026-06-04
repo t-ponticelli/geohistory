@@ -1171,7 +1171,8 @@
       
       <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px;">
         <button class="btn-secondary" onclick="shareYesterday()">Share Score 📤</button>
-        <button class="btn-secondary" onclick="viewLeaderboard()">View Leaderboard 🏅</button>
+        <button class="btn-secondary" onclick="viewLeaderboard()">Leaderboard 🏆</button>
+        <button class="btn-secondary" onclick="viewStats()">My Stats 📊</button>
       </div>
     </div>
   </div>
@@ -1348,7 +1349,8 @@
     <div class="breakdown" id="breakdown"></div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
       <button class="btn-primary" onclick="shareScore()">Share Score 📤</button>
-      <button class="btn-secondary" onclick="viewLeaderboard()">View Leaderboard 🏅</button>
+      <button class="btn-secondary" onclick="viewLeaderboard()">Leaderboard 🏆</button>
+      <button class="btn-secondary" onclick="viewStats()">My Stats 📊</button>
       <div style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px;">
         Come back tomorrow for new questions!
       </div>
@@ -2481,6 +2483,10 @@ function showShareToast(message) {
 // Go to leaderboard
 function viewLeaderboard() {
   window.location.href = '/leaderboard.html';
+}
+
+function viewStats() {
+  window.location.href = '/stats.html';
 }
 </script>
 </body>
