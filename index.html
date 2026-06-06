@@ -2006,10 +2006,13 @@ function initMap() {
       id: 'connector-line',
       type: 'line',
       source: 'connector',
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
       paint: {
-        'line-color': '#ffffff',
-        'line-width': 2.5,
-        'line-dasharray': [2, 2]
+        'line-width': 3.5,
+        'line-color': '#dc2626' // default red, overridden per guess
       }
     });
     lineSourceAdded = true;
@@ -2279,12 +2282,11 @@ function submitGuess() {
     .setLngLat([q.answer.lng, q.answer.lat])
     .addTo(map);
 
-  // Draw connector line (handle dateline crossing)
+  // Draw connector line as animated "tape measure" colored by tier
   if (lineSourceAdded) {
     let guessLng = guessLngLat.lng;
     let answerLng = q.answer.lng;
     
-    // If the line would cross more than 180°, adjust so it takes the short path
     const lngDiff = answerLng - guessLng;
     if (lngDiff > 180) {
       answerLng -= 360;
@@ -2292,19 +2294,45 @@ function submitGuess() {
       answerLng += 360;
     }
     
-    map.getSource('connector').setData({
-      type: 'FeatureCollection',
-      features: [{
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [
-            [guessLng, guessLngLat.lat],
-            [answerLng, q.answer.lat]
-          ]
-        }
-      }]
-    });
+    // Set line color based on tier earned
+    let lineColor;
+    if (tier.name === 'Elite' || tier.name === 'Great') lineColor = '#16a34a'; // green
+    else if (tier.name === 'Good') lineColor = '#eab308'; // yellow
+    else lineColor = '#dc2626'; // red (Bad / Miss)
+    
+    map.setPaintProperty('connector-line', 'line-color', lineColor);
+    
+    const startCoord = [guessLng, guessLngLat.lat];
+    const endCoord = [answerLng, q.answer.lat];
+    
+    // Animate line extending from guess to correct answer
+    const duration = 700;
+    const startTime = performance.now();
+    
+    function animateLine(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      
+      const currentLng = startCoord[0] + (endCoord[0] - startCoord[0]) * eased;
+      const currentLat = startCoord[1] + (endCoord[1] - startCoord[1]) * eased;
+      
+      map.getSource('connector').setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [startCoord, [currentLng, currentLat]]
+          }
+        }]
+      });
+      
+      if (t < 1) {
+        requestAnimationFrame(animateLine);
+      }
+    }
+    requestAnimationFrame(animateLine);
   }
 
   // Fit both points (adjust answer position for dateline if needed)
