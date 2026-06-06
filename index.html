@@ -96,13 +96,13 @@
 
   /* Progress bar — replaces dots, fills as you score */
   .pip-row {
-    flex: 1;
+    width: 120px;
     height: 8px;
     border-radius: 4px;
     background: var(--border);
     overflow: hidden;
     position: relative;
-    max-width: 180px;
+    flex-shrink: 0;
   }
   .progress-fill {
     height: 100%;
@@ -112,16 +112,39 @@
     border-radius: 4px;
   }
 
+  /* Score-side cluster: bar + chip together on the right */
+  .score-cluster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+
   .score-chip {
-    background: var(--ink);
-    color: var(--cream);
+    background: #dc2626; /* matches red default */
+    color: white;
     padding: 6px 12px;
     border-radius: 100px;
     font-family: var(--mono);
     font-size: 0.78rem;
-    font-weight: 600;
+    font-weight: 700;
     min-width: 52px;
     text-align: center;
+    transition: background-color 0.4s;
+  }
+
+  /* Pop animation — bar + chip "scale up" 3 times on green-worthy answers */
+  @keyframes scorePop {
+    0%   { transform: scale(1); }
+    15%  { transform: scale(1.18); }
+    30%  { transform: scale(1); }
+    45%  { transform: scale(1.13); }
+    60%  { transform: scale(1); }
+    75%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .pop-animate {
+    animation: scorePop 0.9s ease-in-out;
   }
 
   /* ─── MAP ─── */
@@ -1258,8 +1281,10 @@
   <!-- TOPBAR -->
   <div id="topbar">
     <div class="brand">Geo<span>History</span></div>
-    <div class="pip-row" id="pip-row"><div class="progress-fill" id="progress-fill"></div></div>
-    <div class="score-chip" id="score-chip">0</div>
+    <div class="score-cluster">
+      <div class="pip-row" id="pip-row"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="score-chip" id="score-chip">0</div>
+    </div>
   </div>
 
   <!-- MAP -->
@@ -2115,21 +2140,18 @@ function loadQuestion(idx) {
 
 function updatePips() {
   const fill = $('progress-fill');
+  const chip = $('score-chip');
   if (!fill) return;
   
   const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
-  // Progress is based on what's been answered so far (questions 0 through currentQ-1)
-  // After the player answers Q5 and we're on the result screen, we want to show full bar
-  const answered = breakdown.length; // how many questions have been answered
+  const answered = breakdown.length;
   const possibleSoFar = MAX_POINTS.slice(0, answered).reduce((a, b) => a + b, 0);
   
-  // Width: % of TOTAL possible (out of 1000), not just answered so far
-  // This way the bar visually tracks "where you stand vs perfect"
+  // Width: % of TOTAL possible
   const widthPct = (totalScore / maxTotal) * 100;
   fill.style.width = Math.min(widthPct, 100) + '%';
   
-  // Color: based on how you've performed RELATIVE to what you could have scored
-  // i.e., if you've answered 2 questions out of 200 max, are you on pace?
+  // Color: based on how you've performed vs what you could have scored
   let perfRatio = 0;
   if (possibleSoFar > 0) {
     perfRatio = totalScore / possibleSoFar;
@@ -2140,7 +2162,28 @@ function updatePips() {
   else if (perfRatio >= 0.40) color = '#eab308'; // yellow
   else color = '#dc2626'; // red
   
+  // Track previous color to trigger pop animation when entering green
+  const prevColor = window._prevBarColor || '#dc2626';
+  
   fill.style.background = color;
+  if (chip) chip.style.background = color;
+  
+  // Pop animation: trigger when latest answer was green-worthy (Elite or Great tier)
+  if (answered > 0) {
+    const lastEntry = breakdown[breakdown.length - 1];
+    if (lastEntry && (lastEntry.tierName === 'Elite' || lastEntry.tierName === 'Great')) {
+      // Trigger pop on the cluster
+      const cluster = document.querySelector('.score-cluster');
+      if (cluster) {
+        cluster.classList.remove('pop-animate');
+        // Force reflow so animation restarts
+        void cluster.offsetWidth;
+        cluster.classList.add('pop-animate');
+      }
+    }
+  }
+  
+  window._prevBarColor = color;
 }
 
 function toggleClue() {
@@ -2376,12 +2419,15 @@ function resetGame() {
   $('end-screen').classList.remove('show');
   $('score-chip').textContent = '0';
   
-  // Reset progress bar
+  // Reset progress bar + chip
   const fill = $('progress-fill');
+  const chip = $('score-chip');
   if (fill) {
     fill.style.width = '0%';
     fill.style.background = '#dc2626';
   }
+  if (chip) chip.style.background = '#dc2626';
+  window._prevBarColor = '#dc2626';
 
   loadQuestion(0);
 }
