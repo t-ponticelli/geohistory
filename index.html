@@ -94,21 +94,23 @@
   }
   .brand span { color: var(--usa-red); }
 
+  /* Progress bar — replaces dots, fills as you score */
   .pip-row {
-    display: flex;
-    gap: 5px;
     flex: 1;
-    justify-content: center;
-  }
-  .pip {
-    width: 22px;
-    height: 6px;
-    border-radius: 3px;
+    height: 8px;
+    border-radius: 4px;
     background: var(--border);
-    transition: all 0.3s;
+    overflow: hidden;
+    position: relative;
+    max-width: 180px;
   }
-  .pip.active { background: var(--usa-red); width: 32px; }
-  .pip.done { background: var(--ink); }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #dc2626; /* red default */
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s;
+    border-radius: 4px;
+  }
 
   .score-chip {
     background: var(--ink);
@@ -746,6 +748,20 @@
     min-height: 1.2em;
   }
 
+  .btn-link-skip {
+    background: none;
+    border: none;
+    color: var(--ink-soft, #666);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 12px;
+    padding: 4px 8px;
+    font-family: inherit;
+  }
+  .btn-link-skip:hover { color: var(--ink, #1a1a1a); }
+  .btn-link-skip:disabled { opacity: 0.5; cursor: wait; }
+
   /* ─── ALREADY PLAYED SCREEN ─── */
   .already-played-screen {
     position: fixed;
@@ -1148,6 +1164,7 @@
       <div class="username-hint">3-20 characters. Letters, numbers, and underscores only.</div>
       
       <button class="btn-primary" id="username-submit" onclick="submitUsername()">Let's Play</button>
+      <button class="btn-link-skip" onclick="playAnonymously()">Or just play (auto-generate name)</button>
       
       <div id="username-error" class="username-error"></div>
     </div>
@@ -1241,7 +1258,7 @@
   <!-- TOPBAR -->
   <div id="topbar">
     <div class="brand">Geo<span>History</span></div>
-    <div class="pip-row" id="pip-row"></div>
+    <div class="pip-row" id="pip-row"><div class="progress-fill" id="progress-fill"></div></div>
     <div class="score-chip" id="score-chip">0</div>
   </div>
 
@@ -1469,6 +1486,73 @@ async function submitUsername() {
     errorEl.textContent = 'Error: ' + e.message;
     submitBtn.disabled = false;
     submitBtn.textContent = "Let's Play";
+  }
+}
+
+// Auto-generate a "player1234" username and create user
+async function playAnonymously() {
+  const errorEl = document.getElementById('username-error');
+  const skipBtn = document.querySelector('.btn-link-skip');
+  const submitBtn = document.getElementById('username-submit');
+  
+  errorEl.textContent = '';
+  if (skipBtn) skipBtn.disabled = true;
+  if (submitBtn) submitBtn.disabled = true;
+  if (skipBtn) skipBtn.textContent = 'Setting up...';
+  
+  try {
+    let clientId = localStorage.getItem('geo_client_id');
+    if (!clientId) {
+      clientId = 'client_' + Math.random().toString(36).slice(2, 11);
+    }
+    
+    // Try up to 8 times to find an available "playerXXXX" name
+    let username = null;
+    let userId = null;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const candidate = 'player' + Math.floor(1000 + Math.random() * 9000);
+      const { data: existing } = await supabaseClient
+        .from('users')
+        .select('id')
+        .ilike('username', candidate)
+        .maybeSingle();
+      
+      if (!existing) {
+        // Available — create
+        const { data: newUser, error } = await supabaseClient
+          .from('users')
+          .insert({ username: candidate, client_id: clientId })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        username = candidate;
+        userId = newUser.id;
+        break;
+      }
+    }
+    
+    if (!username) {
+      throw new Error('Could not generate a unique name. Try again or pick your own.');
+    }
+    
+    localStorage.setItem('geo_user_id', userId);
+    localStorage.setItem('geo_username', username);
+    localStorage.setItem('geo_client_id', clientId);
+    window.currentUserId = userId;
+    window.currentUsername = username;
+    
+    document.getElementById('username-modal').classList.remove('show');
+    await checkDailyPlay();
+    
+  } catch (e) {
+    console.error('Anonymous play error:', e);
+    errorEl.textContent = 'Error: ' + e.message;
+    if (skipBtn) {
+      skipBtn.disabled = false;
+      skipBtn.textContent = 'Or just play (auto-generate name)';
+    }
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
@@ -2030,13 +2114,33 @@ function loadQuestion(idx) {
 }
 
 function updatePips() {
-  const row = $('pip-row');
-  row.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
-    const p = document.createElement('div');
-    p.className = 'pip' + (i === currentQ ? ' active' : (i < currentQ ? ' done' : ''));
-    row.appendChild(p);
+  const fill = $('progress-fill');
+  if (!fill) return;
+  
+  const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
+  // Progress is based on what's been answered so far (questions 0 through currentQ-1)
+  // After the player answers Q5 and we're on the result screen, we want to show full bar
+  const answered = breakdown.length; // how many questions have been answered
+  const possibleSoFar = MAX_POINTS.slice(0, answered).reduce((a, b) => a + b, 0);
+  
+  // Width: % of TOTAL possible (out of 1000), not just answered so far
+  // This way the bar visually tracks "where you stand vs perfect"
+  const widthPct = (totalScore / maxTotal) * 100;
+  fill.style.width = Math.min(widthPct, 100) + '%';
+  
+  // Color: based on how you've performed RELATIVE to what you could have scored
+  // i.e., if you've answered 2 questions out of 200 max, are you on pace?
+  let perfRatio = 0;
+  if (possibleSoFar > 0) {
+    perfRatio = totalScore / possibleSoFar;
   }
+  
+  let color;
+  if (perfRatio >= 0.70) color = '#16a34a'; // green
+  else if (perfRatio >= 0.40) color = '#eab308'; // yellow
+  else color = '#dc2626'; // red
+  
+  fill.style.background = color;
 }
 
 function toggleClue() {
@@ -2271,6 +2375,13 @@ function resetGame() {
 
   $('end-screen').classList.remove('show');
   $('score-chip').textContent = '0';
+  
+  // Reset progress bar
+  const fill = $('progress-fill');
+  if (fill) {
+    fill.style.width = '0%';
+    fill.style.background = '#dc2626';
+  }
 
   loadQuestion(0);
 }
