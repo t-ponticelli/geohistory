@@ -758,6 +758,13 @@
     transition: background 0.15s;
   }
   .btn-split-half:hover { background: rgba(255,255,255,0.08); }
+  .btn-split.is-disabled {
+    opacity: 0.45;
+    box-shadow: 0 4px 0 #000;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+  .btn-split.is-disabled .btn-split-half { cursor: not-allowed; }
   .btn-split-divider {
     width: 1px;
     background: rgba(255,255,255,0.2);
@@ -1598,10 +1605,11 @@
     </div>
     <div class="breakdown" id="breakdown"></div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
-      <button class="btn-primary" onclick="shareScore()">Share Score 📤</button>
-      <div class="btn-split"><button class="btn-split-half" onclick="viewLeaderboard()">Leaderboard 🏆</button><div class="btn-split-divider"></div><button class="btn-split-half" onclick="viewStats()">Stats 📊</button></div>
-      <button class="btn-secondary" onclick="openPastGames()">🕓 Play Past Games</button>
-      <div style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px;">
+      <button class="btn-primary" id="end-share-btn" onclick="shareScore()">Share Score 📤</button>
+      <button class="btn-secondary" id="end-return-btn" onclick="returnToToday()" style="display:none;">↩️ Return to Today</button>
+      <div class="btn-split" id="end-split-btns"><button class="btn-split-half" id="end-leaderboard-btn" onclick="viewLeaderboard()">Leaderboard 🏆</button><div class="btn-split-divider"></div><button class="btn-split-half" id="end-stats-btn" onclick="viewStats()">Stats 📊</button></div>
+      <button class="btn-secondary" id="end-past-btn" onclick="openPastGames()">🕓 Play Past Games</button>
+      <div id="end-tomorrow-msg" style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px;">
         Come back tomorrow for new questions!
       </div>
     </div>
@@ -2125,6 +2133,16 @@ const $ = id => document.getElementById(id);
 // ═══════════════════════════════════════════════════════════════════════
 
 function initMap() {
+  // If map already initialized (e.g. starting a practice game after a real one), reuse it
+  if (map) {
+    // Reset to default view; clear any existing markers and connector line
+    if (guessMarker) { guessMarker.remove(); guessMarker = null; }
+    if (correctMarker) { correctMarker.remove(); correctMarker = null; }
+    if (lineSourceAdded && map.getSource('connector')) {
+      map.getSource('connector').setData({ type: 'FeatureCollection', features: [] });
+    }
+    return;
+  }
   map = new maplibregl.Map({
     container: 'map',
     style: {
@@ -2496,7 +2514,7 @@ async function startPracticeGame(date) {
   $('practice-badge').classList.add('show');
   
   // Hide already-played screen + end screen if showing
-  $('already-played-screen').classList.remove('show');
+  $('already-played').classList.remove('show');
   $('end-screen').classList.remove('show');
   
   // Fetch the round for that date
@@ -2531,7 +2549,8 @@ async function startPracticeGame(date) {
         title: q.title,
         clue: q.clue,
         year: q.year,
-        answer: { lat: q.answer_lat, lng: q.answer_lng, label: q.location },
+        answer: { lat: q.answer_lat, lng: q.answer_lng },
+        location: q.location,
         emoji: q.emoji
       }));
       
@@ -2921,6 +2940,31 @@ function showEndScreen() {
   const endBadge = document.getElementById('end-streak-badge');
   if (endBadge) endBadge.classList.remove('show');
   
+  // Adjust buttons + footer based on whether this was a real or practice game
+  const pastBtn = document.getElementById('end-past-btn');
+  const tomorrowMsg = document.getElementById('end-tomorrow-msg');
+  const shareBtn = document.getElementById('end-share-btn');
+  const returnBtn = document.getElementById('end-return-btn');
+  const splitBtns = document.getElementById('end-split-btns');
+  if (practiceMode) {
+    // Hide Share, show Return to Today in its place
+    if (shareBtn) shareBtn.style.display = 'none';
+    if (returnBtn) returnBtn.style.display = '';
+    // Leaderboard / Stats remain visible but disabled (greyed)
+    if (splitBtns) splitBtns.classList.add('is-disabled');
+    // Past Games button keeps the same label
+    if (pastBtn) pastBtn.textContent = '🕓 Play Past Games';
+    // Hide tomorrow message (misleading in practice)
+    if (tomorrowMsg) tomorrowMsg.style.display = 'none';
+  } else {
+    // Real game: Share visible, Return hidden, split enabled
+    if (shareBtn) shareBtn.style.display = '';
+    if (returnBtn) returnBtn.style.display = 'none';
+    if (splitBtns) splitBtns.classList.remove('is-disabled');
+    if (pastBtn) pastBtn.textContent = '🕓 Play Past Games';
+    if (tomorrowMsg) tomorrowMsg.style.display = '';
+  }
+  
   // Only show streak on real (non-practice) plays — since saving happens
   if (!practiceMode) {
     // Give save a moment to write, then calculate streak fresh
@@ -3189,6 +3233,12 @@ function viewLeaderboard() {
 
 function viewStats() {
   window.location.href = '/stats.html';
+}
+
+// Exit practice mode and return to today's natural screen (already-played or splash)
+function returnToToday() {
+  // Easiest + most reliable: reload. initApp() will route correctly.
+  window.location.reload();
 }
 </script>
 </body>
