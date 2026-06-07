@@ -22,7 +22,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .back-btn {
     background: #fffbf3;
@@ -41,7 +41,7 @@
   }
   h1 {
     font-family: ui-serif, Georgia, serif;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 900;
     font-style: italic;
     letter-spacing: -0.02em;
@@ -49,43 +49,163 @@
   }
   h1 span { color: #bf0a30; }
 
+  /* PRIMARY TAB NAV (Leaderboard / My Stats) */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #e8dfd0;
+  }
+  .tab-link {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 8px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    text-decoration: none;
+    text-align: center;
+  }
+  .tab-link.active {
+    color: #002868;
+    border-bottom-color: #002868;
+  }
+
+  /* SUB TABS (Daily / Weekly) */
+  .sub-tabs {
+    display: flex;
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 16px;
+  }
+  .sub-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 9px 8px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .sub-tab.active {
+    background: #002868;
+    color: white;
+  }
+
+  /* DAY NAVIGATION (daily only) */
+  .day-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fffbf3;
+    border: 1px solid #e8dfd0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .day-arrow {
+    background: white;
+    border: 1px solid #e8dfd0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #002868;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .day-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+  .day-arrow:active:not(:disabled) { transform: scale(0.95); }
+  .day-label { text-align: center; flex: 1; }
+  .day-name { font-weight: 700; font-size: 0.95rem; }
+  .day-date { font-size: 0.75rem; color: #666; margin-top: 2px; }
+
   /* META */
   .meta {
     background: #fffbf3;
     border: 1px solid #e8dfd0;
     border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .meta-theme {
-    font-weight: 700;
-    font-size: 0.95rem;
-  }
-  .meta-count {
-    font-size: 0.8rem;
-    color: #666;
-  }
+  .meta-theme { font-weight: 700; font-size: 0.95rem; }
+  .meta-count { font-size: 0.8rem; color: #666; }
 
   /* REFRESH */
   .refresh-btn {
     background: white;
     border: 1px solid #e8dfd0;
-    padding: 8px 14px;
+    padding: 6px 12px;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     color: #002868;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    margin-bottom: 14px;
   }
   .refresh-btn:active { transform: scale(0.97); }
   .refresh-btn:disabled { opacity: 0.5; cursor: wait; }
+
+  /* SCORE OF THE WEEK (featured card) */
+  .sotw {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #d97706;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+  .sotw-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #92400e;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .sotw-player {
+    font-family: ui-serif, Georgia, serif;
+    font-style: italic;
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin-bottom: 2px;
+    color: #1a1a1a;
+  }
+  .sotw-meta {
+    font-size: 0.85rem;
+    color: #78350f;
+    margin-bottom: 8px;
+  }
+  .sotw-score {
+    font-family: ui-monospace, monospace;
+    font-weight: 900;
+    font-size: 2.3rem;
+    color: #d97706;
+    line-height: 1;
+  }
+  .sotw-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .sotw-left { flex: 1; min-width: 0; }
 
   /* LEADERBOARD */
   .leaderboard {
@@ -102,9 +222,7 @@
     border-bottom: 1px solid #e8dfd0;
   }
   .row:last-child { border-bottom: none; }
-  .row.is-me {
-    background: #fef3c7;
-  }
+  .row.is-me { background: #fef3c7; }
   .rank {
     font-family: ui-serif, Georgia, serif;
     font-weight: 900;
@@ -140,6 +258,16 @@
     flex-shrink: 0;
   }
 
+  /* SECTION HEADER (Weekly view) */
+  .section-title {
+    font-family: ui-serif, Georgia, serif;
+    font-style: italic;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #1a1a1a;
+  }
+
   /* STATES */
   .status {
     background: #fffbf3;
@@ -166,16 +294,8 @@
     border-radius: 8px;
     font-weight: 700;
     font-size: 0.9rem;
-    cursor: pointer;
     text-decoration: none;
     display: inline-block;
-  }
-
-  .last-updated {
-    text-align: center;
-    margin-top: 12px;
-    font-size: 0.7rem;
-    color: #888;
   }
 </style>
 </head>
@@ -184,26 +304,58 @@
 
   <div class="header">
     <a href="/" class="back-btn">←</a>
-    <h1>Geo<span>History</span> Leaderboard</h1>
+    <h1>Geo<span>History</span></h1>
   </div>
 
-  <div class="meta" id="meta" style="display:none;">
-    <div class="meta-theme" id="theme">—</div>
-    <div class="meta-count" id="count">—</div>
+  <!-- Primary nav: Leaderboard vs My Stats -->
+  <div class="tab-nav">
+    <a href="/leaderboard.html" class="tab-link active">🏆 Leaderboard</a>
+    <a href="/stats.html" class="tab-link">📊 My Stats</a>
   </div>
 
-  <button class="refresh-btn" id="refresh-btn" onclick="loadLeaderboard()">
-    ↻ <span>Refresh</span>
-  </button>
+  <!-- Sub-tabs: Daily vs Weekly -->
+  <div class="sub-tabs">
+    <button class="sub-tab active" id="tab-daily" onclick="switchTab('daily')">Daily</button>
+    <button class="sub-tab" id="tab-weekly" onclick="switchTab('weekly')">Weekly</button>
+  </div>
 
-  <div id="content">
-    <div class="status">
-      <div class="big">⏳</div>
-      <h3>Loading scores...</h3>
+  <!-- DAILY VIEW -->
+  <div id="daily-view">
+    <div class="day-nav">
+      <button class="day-arrow" id="prev-day" onclick="changeDay(-1)">←</button>
+      <div class="day-label">
+        <div class="day-name" id="day-name">Today</div>
+        <div class="day-date" id="day-date">—</div>
+      </div>
+      <button class="day-arrow" id="next-day" onclick="changeDay(1)">→</button>
+    </div>
+
+    <div class="meta" id="meta" style="display:none;">
+      <div class="meta-theme" id="theme">—</div>
+      <div class="meta-count" id="count">—</div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadDaily()">↻ Refresh</button>
+
+    <div id="daily-content">
+      <div class="status">
+        <div class="big">⏳</div>
+        <h3>Loading...</h3>
+      </div>
     </div>
   </div>
 
-  <div class="last-updated" id="last-updated"></div>
+  <!-- WEEKLY VIEW -->
+  <div id="weekly-view" style="display:none;">
+    <button class="refresh-btn" onclick="loadWeekly()">↻ Refresh</button>
+    <div id="weekly-content">
+      <div class="status">
+        <div class="big">⏳</div>
+        <h3>Loading...</h3>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -214,13 +366,37 @@ const sb = window.supabase.createClient(
 
 const $ = (id) => document.getElementById(id);
 
-// Get current game date (3 AM EST reset)
-function getGameDate() {
+let dayOffset = 0;
+let activeTab = 'daily';
+
+function getGameDate(offset = 0) {
   const now = new Date();
   const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
   const estMs = utcMs - (5 * 60 * 60 * 1000);
   const adjusted = new Date(estMs - (3 * 60 * 60 * 1000));
+  adjusted.setUTCDate(adjusted.getUTCDate() + offset);
   return adjusted.toISOString().split('T')[0];
+}
+
+function getDayLabel(offset) {
+  if (offset === 0) return 'Today';
+  if (offset === -1) return 'Yesterday';
+  const d = new Date(getGameDate(offset) + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDayLabel(dateStr) {
+  const today = getGameDate(0);
+  const yesterday = getGameDate(-1);
+  if (dateStr === today) return 'Today';
+  if (dateStr === yesterday) return 'Yesterday';
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function escapeHtml(str) {
@@ -235,34 +411,49 @@ function getRankDisplay(rank) {
   return { text: '#' + rank, cls: '' };
 }
 
-async function loadLeaderboard() {
-  const refreshBtn = $('refresh-btn');
-  refreshBtn.disabled = true;
+function switchTab(tab) {
+  activeTab = tab;
+  if (tab === 'daily') {
+    $('tab-daily').classList.add('active');
+    $('tab-weekly').classList.remove('active');
+    $('daily-view').style.display = '';
+    $('weekly-view').style.display = 'none';
+    loadDaily();
+  } else {
+    $('tab-daily').classList.remove('active');
+    $('tab-weekly').classList.add('active');
+    $('daily-view').style.display = 'none';
+    $('weekly-view').style.display = '';
+    loadWeekly();
+  }
+}
+
+function updateDayNav() {
+  const gameDate = getGameDate(dayOffset);
+  $('day-name').textContent = getDayLabel(dayOffset);
+  $('day-date').textContent = formatDate(gameDate);
+  $('prev-day').disabled = dayOffset <= -6;
+  $('next-day').disabled = dayOffset >= 0;
+}
+
+function changeDay(delta) {
+  const newOffset = dayOffset + delta;
+  if (newOffset > 0 || newOffset < -6) return;
+  dayOffset = newOffset;
+  updateDayNav();
+  loadDaily();
+}
+
+// ─── DAILY LEADERBOARD ───
+async function loadDaily() {
+  $('daily-content').innerHTML = `
+    <div class="status"><div class="big">⏳</div><h3>Loading...</h3></div>
+  `;
   
-  const gameDate = getGameDate();
+  const gameDate = getGameDate(dayOffset);
   const username = (localStorage.getItem('geo_username') || '').toLowerCase();
   
-  console.log('=== LEADERBOARD LOAD ===');
-  console.log('Game date:', gameDate);
-  console.log('Username:', username);
-  
-  // Timeout fallback so it never hangs forever
-  const timeoutId = setTimeout(() => {
-    console.error('Leaderboard query timed out');
-    $('content').innerHTML = `
-      <div class="status">
-        <div class="big">⏱️</div>
-        <h3>Loading too slow</h3>
-        <p>The database is taking longer than 8 seconds.</p>
-        <button class="play-btn" onclick="loadLeaderboard()">Try Again</button>
-      </div>
-    `;
-    refreshBtn.disabled = false;
-  }, 8000);
-  
   try {
-    console.log('Querying Supabase...');
-    
     const { data: scores, error } = await sb
       .from('scores')
       .select('username, total_score, theme')
@@ -270,53 +461,41 @@ async function loadLeaderboard() {
       .order('total_score', { ascending: false })
       .limit(100);
     
-    clearTimeout(timeoutId);
-    
     if (error) {
-      console.error('Supabase error:', error);
-      $('content').innerHTML = `
+      $('daily-content').innerHTML = `
         <div class="status">
           <div class="big">⚠️</div>
           <h3>Database error</h3>
-          <p>${escapeHtml(error.message || 'Unknown error')}</p>
-          <button class="play-btn" onclick="loadLeaderboard()">Try Again</button>
+          <p>${escapeHtml(error.message)}</p>
         </div>
       `;
-      refreshBtn.disabled = false;
       return;
     }
-    
-    console.log('Got', scores?.length || 0, 'scores:', scores);
     
     if (!scores || scores.length === 0) {
       $('meta').style.display = 'none';
-      $('content').innerHTML = `
+      $('daily-content').innerHTML = `
         <div class="status">
           <div class="big">🌍</div>
-          <h3>No scores yet today</h3>
-          <p>Be the first to play!</p>
-          <a href="/" class="play-btn">Play Now</a>
+          <h3>No scores</h3>
+          <p>${dayOffset === 0 ? 'Be the first to play today!' : 'No one played on this day.'}</p>
+          ${dayOffset === 0 ? '<a href="/" class="play-btn">Play Now</a>' : ''}
         </div>
       `;
-      const now = new Date();
-      $('last-updated').textContent = `Last checked ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-      refreshBtn.disabled = false;
       return;
     }
     
-    // Show meta info
     $('meta').style.display = 'flex';
-    $('theme').textContent = scores[0].theme || 'Today\'s Round';
+    $('theme').textContent = scores[0].theme || 'Round';
     $('count').textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
     
-    // Render rows
     const rows = scores.map((s, i) => {
       const rank = i + 1;
-      const rankDisplay = getRankDisplay(rank);
+      const rd = getRankDisplay(rank);
       const isMe = username && s.username && s.username.toLowerCase() === username;
       return `
         <div class="row ${isMe ? 'is-me' : ''}">
-          <div class="rank ${rankDisplay.cls}">${rankDisplay.text}</div>
+          <div class="rank ${rd.cls}">${rd.text}</div>
           <div class="username">
             ${escapeHtml(s.username || 'Anonymous')}
             ${isMe ? '<span class="me-tag">You</span>' : ''}
@@ -326,30 +505,123 @@ async function loadLeaderboard() {
       `;
     }).join('');
     
-    $('content').innerHTML = `<div class="leaderboard">${rows}</div>`;
-    
-    const now = new Date();
-    $('last-updated').textContent = `Last updated ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-    
+    $('daily-content').innerHTML = `<div class="leaderboard">${rows}</div>`;
   } catch (e) {
-    clearTimeout(timeoutId);
-    console.error('Caught error:', e);
-    $('content').innerHTML = `
-      <div class="status">
-        <div class="big">⚠️</div>
-        <h3>Something went wrong</h3>
-        <p>${escapeHtml(e.message || String(e))}</p>
-        <button class="play-btn" onclick="loadLeaderboard()">Try Again</button>
-      </div>
+    $('daily-content').innerHTML = `
+      <div class="status"><div class="big">⚠️</div><h3>Error</h3><p>${escapeHtml(e.message || String(e))}</p></div>
     `;
-  } finally {
-    refreshBtn.disabled = false;
   }
 }
 
-// Load on page open
-loadLeaderboard();
-</script>
+// ─── WEEKLY LEADERBOARD ───
+async function loadWeekly() {
+  $('weekly-content').innerHTML = `
+    <div class="status"><div class="big">⏳</div><h3>Loading...</h3></div>
+  `;
+  
+  const sevenDaysAgo = getGameDate(-6); // 7-day window
+  const username = (localStorage.getItem('geo_username') || '').toLowerCase();
+  
+  try {
+    const { data: scores, error } = await sb
+      .from('scores')
+      .select('username, total_score, theme, date')
+      .gte('date', sevenDaysAgo)
+      .order('total_score', { ascending: false });
+    
+    if (error) {
+      $('weekly-content').innerHTML = `
+        <div class="status">
+          <div class="big">⚠️</div>
+          <h3>Database error</h3>
+          <p>${escapeHtml(error.message)}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    if (!scores || scores.length === 0) {
+      $('weekly-content').innerHTML = `
+        <div class="status">
+          <div class="big">🌍</div>
+          <h3>No scores this week</h3>
+          <p>Be the first to play!</p>
+          <a href="/" class="play-btn">Play Now</a>
+        </div>
+      `;
+      return;
+    }
+    
+    // Score of the Week — highest single-game score in the last 7 days
+    const sotw = scores[0]; // already sorted by total_score desc
+    
+    // Aggregate by player (case-insensitive)
+    const playerTotals = new Map();
+    for (const s of scores) {
+      if (!s.username) continue;
+      const key = s.username.toLowerCase();
+      const existing = playerTotals.get(key);
+      if (existing) {
+        existing.total += s.total_score;
+        existing.games += 1;
+      } else {
+        playerTotals.set(key, {
+          username: s.username,
+          total: s.total_score,
+          games: 1
+        });
+      }
+    }
+    
+    // Sort by total descending
+    const ranked = Array.from(playerTotals.values()).sort((a, b) => b.total - a.total);
+    
+    // Build Score of the Week card
+    const sotwHTML = `
+      <div class="sotw">
+        <div class="sotw-label">🏆 Score of the Week</div>
+        <div class="sotw-row">
+          <div class="sotw-left">
+            <div class="sotw-player">${escapeHtml(sotw.username || 'Anonymous')}</div>
+            <div class="sotw-meta">${escapeHtml(sotw.theme || '—')} · ${formatDayLabel(sotw.date)}</div>
+          </div>
+          <div class="sotw-score">${sotw.total_score}</div>
+        </div>
+      </div>
+    `;
+    
+    // Build weekly leaderboard
+    const rows = ranked.map((p, i) => {
+      const rank = i + 1;
+      const rd = getRankDisplay(rank);
+      const isMe = username && p.username && p.username.toLowerCase() === username;
+      return `
+        <div class="row ${isMe ? 'is-me' : ''}">
+          <div class="rank ${rd.cls}">${rd.text}</div>
+          <div class="username">
+            ${escapeHtml(p.username || 'Anonymous')}
+            ${isMe ? '<span class="me-tag">You</span>' : ''}
+          </div>
+          <div class="score">${p.total}</div>
+        </div>
+      `;
+    }).join('');
+    
+    $('weekly-content').innerHTML = `
+      ${sotwHTML}
+      <div class="section-title">📅 Last 7 Days — Total Points</div>
+      <div class="leaderboard">${rows}</div>
+    `;
+  } catch (e) {
+    $('weekly-content').innerHTML = `
+      <div class="status"><div class="big">⚠️</div><h3>Error</h3><p>${escapeHtml(e.message || String(e))}</p></div>
+    `;
+  }
+}
 
+// Init
+updateDayNav();
+loadDaily();
+</script>
 </body>
 </html>
