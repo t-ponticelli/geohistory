@@ -435,6 +435,153 @@
     padding: 20px;
   }
   .dd-modal.show { display: flex; }
+
+  /* STREAK CARD - same vibe as DD, with fire */
+  /* STREAK BADGE — small inline icon shown next to the green checkmark */
+  .streak-badge {
+    display: none;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 2.6rem;
+    line-height: 1;
+    animation: streakFloat 1.8s ease-in-out infinite;
+    user-select: none;
+  }
+  .streak-badge.show { display: inline-flex; }
+  @keyframes streakFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .streak-badge-number {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: #d97706;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1.5px solid #d97706;
+    border-radius: 100px;
+    padding: 3px 10px;
+    line-height: 1;
+  }
+  
+  /* Wrapper that puts the checkmark and streak side-by-side */
+  .end-success-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  /* PAST GAMES MODAL */
+  .past-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .past-modal.show { display: flex; }
+  .past-content {
+    background: var(--paper, #fef7ed);
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .past-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .past-header h2 {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-style: italic;
+    margin-bottom: 6px;
+  }
+  .past-subtitle {
+    font-size: 0.85rem;
+    color: var(--ink-soft, #666);
+  }
+  .past-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .past-day-btn {
+    background: white;
+    border: 1px solid #e8dfd0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .past-day-btn:hover:not(:disabled) {
+    background: #fef3c7;
+    border-color: #d97706;
+  }
+  .past-day-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .past-day-label {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .past-day-theme {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 2px;
+  }
+  .past-day-arrow {
+    font-size: 1.2rem;
+    color: #002868;
+    font-weight: 700;
+  }
+  .past-close-btn {
+    width: 100%;
+    background: none;
+    border: 1px solid #e8dfd0;
+    color: #1a1a1a;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  
+  /* Practice mode badge */
+  .practice-badge {
+    position: fixed;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #d97706;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    z-index: 4000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: none;
+  }
+  .practice-badge.show { display: block; }
   .dd-content {
     background: var(--paper);
     border-radius: 20px;
@@ -1196,7 +1343,12 @@
   <!-- ALREADY PLAYED TODAY SCREEN -->
   <div id="already-played" class="already-played-screen">
     <div class="already-played-content">
-      <div class="already-played-icon">✓</div>
+      <div class="end-success-row">
+        <div class="already-played-icon">✓</div>
+        <div class="streak-badge" id="ap-streak-badge">
+          🔥<span class="streak-badge-number" id="ap-streak-num">0</span>
+        </div>
+      </div>
       <h2>You've already played today!</h2>
       <p class="already-played-username">Welcome back, <strong id="ap-username">player</strong></p>
       
@@ -1212,7 +1364,7 @@
       <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px;">
         <button class="btn-secondary" onclick="shareYesterday()">Share Score 📤</button>
         <button class="btn-secondary" onclick="viewLeaderboard()">Leaderboard 🏆</button>
-        <button class="btn-secondary" onclick="viewStats()">My Stats 📊</button>
+        <button class="btn-secondary" onclick="openPastGames()">🕓 Play Past Games</button>
       </div>
     </div>
   </div>
@@ -1352,6 +1504,23 @@
     </div>
   </div>
 
+  <!-- PAST GAMES MODAL -->
+  <div id="past-modal" class="past-modal">
+    <div class="past-content">
+      <div class="past-header">
+        <h2>🕓 Play Past Games</h2>
+        <div class="past-subtitle">Practice mode — your stats won't be affected</div>
+      </div>
+      <div class="past-list" id="past-list">
+        <div style="text-align:center; padding: 20px; color: #666;">Loading...</div>
+      </div>
+      <button class="past-close-btn" onclick="closePastGames()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- PRACTICE BADGE (shown when playing in practice mode) -->
+  <div id="practice-badge" class="practice-badge">🕓 Practice Mode</div>
+
   <!-- RESULT SHEET -->
   <div id="result-sheet">
     <div class="sheet-handle"></div>
@@ -1382,6 +1551,12 @@
   <!-- END SCREEN -->
   <div id="end-screen">
     <div class="end-top">
+      <div class="end-success-row">
+        <div class="already-played-icon">✓</div>
+        <div class="streak-badge" id="end-streak-badge">
+          🔥<span class="streak-badge-number" id="end-streak-num">0</span>
+        </div>
+      </div>
       <div class="end-subtitle">Here's how you did</div>
     </div>
     <div class="end-score-card">
@@ -1392,7 +1567,7 @@
     <div style="display: flex; flex-direction: column; gap: 10px;">
       <button class="btn-primary" onclick="shareScore()">Share Score 📤</button>
       <button class="btn-secondary" onclick="viewLeaderboard()">Leaderboard 🏆</button>
-      <button class="btn-secondary" onclick="viewStats()">My Stats 📊</button>
+      <button class="btn-secondary" onclick="openPastGames()">🕓 Play Past Games</button>
       <div style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px;">
         Come back tomorrow for new questions!
       </div>
@@ -1649,6 +1824,9 @@ function showAlreadyPlayed(scoreData) {
   setInterval(updateCountdown, 1000);
   
   document.getElementById('already-played').classList.add('show');
+  
+  // Show streak badge if applicable
+  maybeShowStreakBadge('ap-streak-badge', 'ap-streak-num');
 }
 
 // Countdown timer to next 3 AM EST
@@ -2079,6 +2257,290 @@ async function startGame() {
   loadQuestion(0);
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// STREAK BADGE (shown on end screen + already-played screen)
+// ═══════════════════════════════════════════════════════════════════════
+
+// Compute the user's current streak — consecutive days of play ending today or yesterday.
+async function calculateStreak() {
+  const username = localStorage.getItem('geo_username');
+  if (!username) return 0;
+  
+  try {
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - 90);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+    
+    const { data: scores, error } = await supabaseClient
+      .from('scores')
+      .select('date')
+      .ilike('username', username)
+      .gte('date', cutoffStr)
+      .order('date', { ascending: false });
+    
+    if (error || !scores || scores.length === 0) return 0;
+    
+    const uniqueDates = [...new Set(scores.map(s => s.date))];
+    uniqueDates.sort().reverse();
+    
+    const today = getGameDate();
+    const yesterday = (() => {
+      const now = new Date();
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const estMs = utcMs - (5 * 60 * 60 * 1000);
+      const adjusted = new Date(estMs - (3 * 60 * 60 * 1000));
+      adjusted.setUTCDate(adjusted.getUTCDate() - 1);
+      return adjusted.toISOString().split('T')[0];
+    })();
+    
+    // Streak only valid if most recent play is today or yesterday
+    if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
+    
+    let streak = 1;
+    let prevDate = uniqueDates[0];
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const expectedDate = new Date(prevDate + 'T12:00:00Z');
+      expectedDate.setUTCDate(expectedDate.getUTCDate() - 1);
+      const expected = expectedDate.toISOString().split('T')[0];
+      if (uniqueDates[i] === expected) {
+        streak++;
+        prevDate = uniqueDates[i];
+      } else {
+        break;
+      }
+    }
+    return streak;
+  } catch (e) {
+    console.error('Streak calc error:', e);
+    return 0;
+  }
+}
+
+// Show streak only on milestone days: 2-5, 10, 15, 20, then every 10 (30, 40…)
+function shouldShowStreak(streak) {
+  if (streak < 2) return false;
+  if (streak >= 2 && streak <= 5) return true;
+  if (streak === 10 || streak === 15 || streak === 20) return true;
+  if (streak >= 30 && streak % 10 === 0) return true;
+  return false;
+}
+
+// Display the streak badge inside the given container ids
+async function maybeShowStreakBadge(badgeId, numberId) {
+  const streak = await calculateStreak();
+  console.log('Streak:', streak, 'show?', shouldShowStreak(streak));
+  
+  if (!shouldShowStreak(streak)) return;
+  
+  const numberEl = document.getElementById(numberId);
+  const badgeEl = document.getElementById(badgeId);
+  if (numberEl) numberEl.textContent = streak;
+  if (badgeEl) badgeEl.classList.add('show');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PAST GAMES (Practice Mode)
+// ═══════════════════════════════════════════════════════════════════════
+
+let practiceMode = false;
+let practiceDate = null;
+
+async function openPastGames() {
+  $('past-modal').classList.add('show');
+  const listEl = $('past-list');
+  listEl.innerHTML = '<div style="text-align:center; padding: 20px; color: #666;">Loading...</div>';
+  
+  try {
+    const today = getGameDate();
+    // Get the last 7 days (today + 6 prior)
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today + 'T12:00:00Z');
+      d.setUTCDate(d.getUTCDate() - i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    
+    const earliestDate = dates[dates.length - 1];
+    
+    const { data: rounds, error } = await supabaseClient
+      .from('daily_rounds')
+      .select('date, theme, question_ids')
+      .gte('date', earliestDate)
+      .lte('date', today)
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    
+    // Build list — show all 7 dates, mark days w/ no round as unavailable
+    const username = localStorage.getItem('geo_username') || '';
+    let userPlayed = new Set();
+    if (username) {
+      const { data: myScores } = await supabaseClient
+        .from('scores')
+        .select('date')
+        .ilike('username', username)
+        .gte('date', earliestDate);
+      if (myScores) {
+        myScores.forEach(s => userPlayed.add(s.date));
+      }
+    }
+    
+    const rows = dates.map(date => {
+      const round = rounds && rounds.find(r => r.date === date);
+      const isToday = date === today;
+      const playedToday = isToday && userPlayed.has(date);
+      
+      let label;
+      if (date === today) {
+        label = 'Today';
+      } else {
+        const yesterday = (() => {
+          const d = new Date(today + 'T12:00:00Z');
+          d.setUTCDate(d.getUTCDate() - 1);
+          return d.toISOString().split('T')[0];
+        })();
+        if (date === yesterday) label = 'Yesterday';
+        else {
+          const d = new Date(date + 'T12:00:00Z');
+          label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        }
+      }
+      
+      if (!round) {
+        return `
+          <button class="past-day-btn" disabled>
+            <div>
+              <div class="past-day-label">${label}</div>
+              <div class="past-day-theme">No game that day</div>
+            </div>
+            <div class="past-day-arrow">—</div>
+          </button>
+        `;
+      }
+      
+      // For today, only let them practice if they've already played (to avoid confusing the flow)
+      if (isToday && !playedToday) {
+        return `
+          <button class="past-day-btn" disabled>
+            <div>
+              <div class="past-day-label">${label}</div>
+              <div class="past-day-theme">${escapeHtmlGame(round.theme || '')}</div>
+            </div>
+            <div class="past-day-arrow" style="font-size: 0.7rem; color: #666;">PLAY LIVE</div>
+          </button>
+        `;
+      }
+      
+      return `
+        <button class="past-day-btn" onclick="startPracticeGame('${date}')">
+          <div>
+            <div class="past-day-label">${label}</div>
+            <div class="past-day-theme">${escapeHtmlGame(round.theme || '')}</div>
+          </div>
+          <div class="past-day-arrow">→</div>
+        </button>
+      `;
+    }).join('');
+    
+    listEl.innerHTML = rows;
+  } catch (e) {
+    console.error('Past games error:', e);
+    listEl.innerHTML = `<div style="text-align:center; padding: 20px; color: #dc2626;">Error: ${escapeHtmlGame(e.message || String(e))}</div>`;
+  }
+}
+
+function closePastGames() {
+  $('past-modal').classList.remove('show');
+}
+
+function escapeHtmlGame(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function startPracticeGame(date) {
+  closePastGames();
+  practiceMode = true;
+  practiceDate = date;
+  
+  // Show practice badge
+  $('practice-badge').classList.add('show');
+  
+  // Hide already-played screen + end screen if showing
+  $('already-played-screen').classList.remove('show');
+  $('end-screen').classList.remove('show');
+  
+  // Fetch the round for that date
+  try {
+    const { data: round, error } = await supabaseClient
+      .from('daily_rounds')
+      .select('question_ids, theme, is_international')
+      .eq('date', date)
+      .single();
+    
+    if (error || !round) {
+      alert('Could not load that day\'s game.');
+      practiceMode = false;
+      practiceDate = null;
+      $('practice-badge').classList.remove('show');
+      return;
+    }
+    
+    isInternationalRound = round.is_international === true;
+    
+    const { data: questions } = await supabaseClient
+      .from('questions')
+      .select('*')
+      .in('id', round.question_ids);
+    
+    if (questions && questions.length > 0) {
+      const orderedQs = round.question_ids
+        .map(id => questions.find(q => q.id === id))
+        .filter(q => q);
+      
+      QUESTIONS = orderedQs.map(q => ({
+        title: q.title,
+        clue: q.clue,
+        year: q.year,
+        answer: { lat: q.answer_lat, lng: q.answer_lng, label: q.location },
+        emoji: q.emoji
+      }));
+      
+      // Update theme display
+      const themeDisplay = document.getElementById('splash-theme');
+      if (themeDisplay) themeDisplay.textContent = round.theme || '';
+    }
+    
+    // Reset game state
+    currentQ = 0;
+    totalScore = 0;
+    breakdown = [];
+    guessLngLat = null;
+    guessed = false;
+    dailyDoubleUsed = false;
+    dailyDoubleActive = false;
+    dailyDoubleWager = 0;
+    dailyDoubleQuestion = -1; // never trigger DD in practice mode
+    
+    $('score-chip').textContent = '0';
+    const fill = $('progress-fill');
+    if (fill) {
+      fill.style.width = '0%';
+      fill.style.background = '#dc2626';
+    }
+    $('score-chip').style.background = '#dc2626';
+    
+    initMap();
+    loadQuestion(0);
+  } catch (e) {
+    console.error('Practice game start error:', e);
+    practiceMode = false;
+    practiceDate = null;
+    $('practice-badge').classList.remove('show');
+    alert('Could not start practice game: ' + e.message);
+  }
+}
+
 function loadQuestion(idx) {
   const q = QUESTIONS[idx];
   guessLngLat = null;
@@ -2426,7 +2888,19 @@ function showEndScreen() {
 
   $('end-screen').classList.add('show');
   
-  // Save score to database
+  // Hide streak badge by default (it'll show via maybeShowStreakBadge if applicable)
+  const endBadge = document.getElementById('end-streak-badge');
+  if (endBadge) endBadge.classList.remove('show');
+  
+  // Only show streak on real (non-practice) plays — since saving happens
+  if (!practiceMode) {
+    // Give save a moment to write, then calculate streak fresh
+    setTimeout(() => {
+      maybeShowStreakBadge('end-streak-badge', 'end-streak-num');
+    }, 700);
+  }
+  
+  // Save score to database (no-op in practice mode)
   saveScore(totalScore);
 }
 
@@ -2437,11 +2911,19 @@ function resetGame() {
   guessLngLat = null;
   guessed = false;
   
+  // Reset practice mode
+  practiceMode = false;
+  practiceDate = null;
+  $('practice-badge').classList.remove('show');
+  
+  // Reset streak badge
+  const endBadge = document.getElementById('end-streak-badge');
+  if (endBadge) endBadge.classList.remove('show');
+  
   // Reset daily double state and re-randomize position
   dailyDoubleUsed = false;
   dailyDoubleActive = false;
   dailyDoubleWager = 0;
-  // Use the same deterministic daily double position
   dailyDoubleQuestion = getDailyDoubleQuestion();
 
   $('end-screen').classList.remove('show');
@@ -2514,6 +2996,12 @@ function confirmDailyDouble() {
 
 // Save score to Supabase
 async function saveScore(finalScore) {
+  // Skip saving in practice mode — stats stay clean
+  if (practiceMode) {
+    console.log('Practice mode: score NOT saved (', finalScore, 'pts)');
+    return;
+  }
+  
   try {
     const gameDate = getGameDate();
     
