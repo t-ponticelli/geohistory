@@ -731,6 +731,39 @@
     top: 0;
     transition: all 0.15s;
   }
+
+  /* Split button: Leaderboard | Stats */
+  .btn-split {
+    width: 100%;
+    display: flex;
+    background: var(--ink);
+    border-radius: 14px;
+    box-shadow: 0 4px 0 #000;
+    overflow: hidden;
+    position: relative;
+    top: 0;
+    transition: all 0.15s;
+  }
+  .btn-split:active { top: 2px; box-shadow: 0 2px 0 #000; }
+  .btn-split-half {
+    flex: 1;
+    background: none;
+    color: white;
+    border: none;
+    padding: 16px;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-split-half:hover { background: rgba(255,255,255,0.08); }
+  .btn-split-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.2);
+    align-self: stretch;
+    margin: 8px 0;
+  }
   .btn-secondary:active {
     top: 2px;
     box-shadow: 0 2px 0 #000;
@@ -1363,7 +1396,7 @@
       
       <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px;">
         <button class="btn-secondary" onclick="shareYesterday()">Share Score 📤</button>
-        <button class="btn-secondary" onclick="viewLeaderboard()">Leaderboard 🏆</button>
+        <div class="btn-split"><button class="btn-split-half" onclick="viewLeaderboard()">Leaderboard 🏆</button><div class="btn-split-divider"></div><button class="btn-split-half" onclick="viewStats()">Stats 📊</button></div>
         <button class="btn-secondary" onclick="openPastGames()">🕓 Play Past Games</button>
       </div>
     </div>
@@ -1566,7 +1599,7 @@
     <div class="breakdown" id="breakdown"></div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
       <button class="btn-primary" onclick="shareScore()">Share Score 📤</button>
-      <button class="btn-secondary" onclick="viewLeaderboard()">Leaderboard 🏆</button>
+      <div class="btn-split"><button class="btn-split-half" onclick="viewLeaderboard()">Leaderboard 🏆</button><div class="btn-split-divider"></div><button class="btn-split-half" onclick="viewStats()">Stats 📊</button></div>
       <button class="btn-secondary" onclick="openPastGames()">🕓 Play Past Games</button>
       <div style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px;">
         Come back tomorrow for new questions!
