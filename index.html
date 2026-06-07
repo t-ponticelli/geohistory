@@ -2349,13 +2349,9 @@ async function calculateStreak() {
   }
 }
 
-// Show streak only on milestone days: 2-5, 10, 15, 20, then every 10 (30, 40…)
+// Show streak whenever it's at least 2 days
 function shouldShowStreak(streak) {
-  if (streak < 2) return false;
-  if (streak >= 2 && streak <= 5) return true;
-  if (streak === 10 || streak === 15 || streak === 20) return true;
-  if (streak >= 30 && streak % 10 === 0) return true;
-  return false;
+  return streak >= 2;
 }
 
 // Display the streak badge inside the given container ids
