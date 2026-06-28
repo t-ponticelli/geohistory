@@ -1,0 +1,164 @@
+/* ============================================================
+   GeoHistory — visual system
+   Motif: "Expedition" — vintage atlas meets modern game.
+   Paper surfaces = content. Ink/dark surfaces = scoreboard/data.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+
+  /* Daylight (default) — green / blue / white */
+  --paper:    oklch(0.974 0.009 235);
+  --paper-2:  oklch(0.996 0.004 235);
+  --paper-edge: oklch(0.90 0.022 235);
+  --ink:      oklch(0.31 0.055 252);
+  --ink-soft: oklch(0.47 0.045 250);
+  --ink-faint:oklch(0.62 0.032 246);
+
+  --navy:     oklch(0.45 0.105 245);
+  --navy-deep:oklch(0.36 0.092 247);
+  --crimson:  oklch(0.535 0.13 160);   /* brand accent — green */
+  --brass:    oklch(0.74 0.135 162);   /* highlight / streak green */
+  --brass-deep: oklch(0.52 0.12 162);
+
+  --good:     oklch(0.63 0.15 150);
+  --ok:       oklch(0.80 0.135 88);
+  --miss:     oklch(0.585 0.205 24);
+
+  /* dark scoreboard surface — deep ocean navy */
+  --slate:    oklch(0.255 0.06 252);
+  --slate-2:  oklch(0.315 0.055 252);
+  --on-slate: oklch(0.98 0.006 235);
+  --on-slate-soft: oklch(0.76 0.03 240);
+
+  --radius: 22px;
+  --radius-sm: 14px;
+  --shadow-card: 0 1px 2px oklch(0.3 0.04 250 / 0.06), 0 18px 40px -24px oklch(0.3 0.06 250 / 0.40);
+  --shadow-pop: 0 8px 24px -8px oklch(0.3 0.08 250 / 0.45);
+}
+
+/* ---- Theme: Midnight (deep ocean night) ---- */
+[data-theme="midnight"] {
+  --paper:    oklch(0.205 0.05 252);
+  --paper-2:  oklch(0.262 0.052 252);
+  --paper-edge: oklch(0.37 0.05 250);
+  --ink:      oklch(0.97 0.01 235);
+  --ink-soft: oklch(0.80 0.02 238);
+  --ink-faint:oklch(0.63 0.03 242);
+  --navy:     oklch(0.56 0.12 245);
+  --navy-deep:oklch(0.46 0.11 246);
+  --crimson:  oklch(0.64 0.14 162);
+  --brass:    oklch(0.80 0.14 162);
+  --brass-deep: oklch(0.70 0.13 162);
+  --slate:    oklch(0.145 0.04 252);
+  --slate-2:  oklch(0.205 0.045 252);
+  --on-slate: oklch(0.97 0.008 235);
+  --on-slate-soft: oklch(0.72 0.03 240);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 22px 44px -26px oklch(0 0 0 / 0.7);
+}
+
+/* ---- Theme: Porcelain (bright white, blue-forward) ---- */
+[data-theme="porcelain"] {
+  --paper:    oklch(0.987 0.005 240);
+  --paper-2:  oklch(1 0 0);
+  --paper-edge: oklch(0.91 0.02 240);
+  --ink:      oklch(0.30 0.06 250);
+  --navy:     oklch(0.44 0.11 243);
+  --navy-deep:oklch(0.35 0.10 244);
+  --crimson:  oklch(0.55 0.13 162);
+  --brass:    oklch(0.55 0.11 232);
+  --brass-deep: oklch(0.46 0.11 235);
+  --slate:    oklch(0.24 0.06 248);
+  --slate-2:  oklch(0.30 0.058 248);
+}
+
+/* shared bits */
+.wordmark { font-family: var(--font-display); font-weight: 700; font-style: italic; letter-spacing: -0.01em; }
+.wordmark .geo { color: var(--ink); }
+.wordmark .hist { color: var(--crimson); }
+
+.display { font-family: var(--font-display); font-weight: 600; line-height: 1.02; letter-spacing: -0.015em; }
+.mono { font-family: var(--font-mono); }
+
+.eyebrow {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint);
+}
+
+/* buttons */
+.btn {
+  font-family: var(--font-ui); font-weight: 700; font-size: 17px;
+  border: none; cursor: pointer; border-radius: 16px;
+  padding: 17px 20px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  transition: transform .12s cubic-bezier(.2,.7,.3,1), filter .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: translateY(1px) scale(0.992); }
+.btn-primary { background: var(--navy); color: #fff; box-shadow: 0 6px 0 var(--navy-deep), var(--shadow-pop); }
+.btn-primary:active { box-shadow: 0 2px 0 var(--navy-deep); transform: translateY(4px); }
+.btn-crimson { background: var(--crimson); color: #fff; box-shadow: 0 6px 0 oklch(0.40 0.10 162), var(--shadow-pop); }
+.btn-crimson:active { box-shadow: 0 2px 0 oklch(0.40 0.10 162); transform: translateY(4px); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--paper-edge); }
+.btn-dark { background: var(--slate); color: var(--on-slate); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-weight: 700; font-size: 12px;
+  padding: 5px 10px; border-radius: 999px; letter-spacing: 0.03em;
+}
+
+/* the wordle-style dots */
+.dots { display: inline-flex; gap: 6px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; box-shadow: inset 0 -2px 3px oklch(0 0 0 / 0.22), inset 0 1px 1px oklch(1 0 0 / 0.25); }
+.dot.good { background: var(--good); }
+.dot.ok { background: var(--ok); }
+.dot.miss { background: var(--miss); }
+.dot.empty { background: oklch(0.5 0 0 / 0.16); box-shadow: none; }
+
+/* flame / streak */
+@keyframes flamePulse { 0%,100% { transform: scale(1) rotate(-1deg);} 50% { transform: scale(1.06) rotate(1deg);} }
+
+/* reusable card */
+.card { background: var(--paper-2); border-radius: var(--radius); box-shadow: var(--shadow-card); border: 1px solid oklch(0.5 0.01 60 / 0.06); }
+.card-dark { background: var(--slate); color: var(--on-slate); border-radius: var(--radius); box-shadow: var(--shadow-card); }
+
+/* screen animations */
+@keyframes screenIn { from { opacity: 0; transform: translateY(8px) scale(0.992); } to { opacity: 1; transform: none; } }
+@keyframes popIn { 0% { opacity:0; transform: scale(0.6);} 60% { transform: scale(1.08);} 100% { opacity:1; transform: scale(1);} }
+@keyframes riseIn { from { opacity: 0; transform: translateY(14px);} to { opacity:1; transform: none; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .screen-anim { animation: screenIn .34s cubic-bezier(.2,.7,.3,1); }
+  .rise { animation: riseIn .5s cubic-bezier(.2,.7,.3,1) both; }
+}
+
+@keyframes dashmove { to { stroke-dashoffset: -1000; } }
+@keyframes sheetUp { from { opacity: 0; transform: translateY(60px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* disabled button */
+.btn:disabled { cursor: default; }
+
+/* faint atlas graticule texture for the themed round card */
+.atlas-grid { position: relative; }
+.atlas-grid::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+  background-image:
+    linear-gradient(oklch(0.4 0.06 256 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.4 0.06 256 / 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(120% 100% at 85% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(120% 100% at 85% 0%, #000, transparent 75%);
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--ink-soft); background: oklch(0.5 0.02 60 / 0.07);
+  padding: 5px 9px; border-radius: 8px; letter-spacing: 0.01em;
+}

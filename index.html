@@ -10,27 +10,28 @@
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<link rel="stylesheet" href="/styles.css" />
 <style>
   :root {
-    --cream: #fef7ed;
-    --paper: #fffbf3;
-    --ink: #1a1a1a;
-    --ink-soft: #4a4a4a;
-    --ink-mute: #888;
-    --orange: #ff7a45;
-    --orange-deep: #e8632d;
-    --green: #16a34a;
-    --red: #dc2626;
-    --border: #e8dfd0;
-    --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
-    --serif: ui-serif, Georgia, "Times New Roman", serif;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
-    /* Patriotic palette */
-    --usa-red: #bf0a30;
-    --usa-blue: #002868;
-    --usa-red-soft: #f9e3e7;
-    --usa-blue-soft: #e0e6f3;
+    /* ── Compat bridge: old variable names used by game/result screens (until Batch 3/4) ── */
+    --cream:        var(--paper);
+    --ink-mute:     var(--ink-faint);
+    --orange:       oklch(0.65 0.18 55);
+    --orange-deep:  oklch(0.55 0.17 50);
+    --green:        var(--good);
+    --red:          var(--miss);
+    --border:       var(--paper-edge);
+    --shadow-lg:    0 10px 30px oklch(0 0 0 / 0.12);
+    --serif:        var(--font-display);
+    --sans:         var(--font-ui);
+    --mono:         var(--font-mono);
+    /* Patriotic palette (game topbar stripe — kept for Batch 3) */
+    --usa-red:      oklch(0.43 0.18 24);
+    --usa-blue:     oklch(0.28 0.12 258);
+    --usa-red-soft: oklch(0.93 0.04 24);
+    --usa-blue-soft:oklch(0.92 0.03 258);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -877,99 +878,106 @@
   }
 
   /* ─── SPLASH ─── */
-  /* ─── USERNAME MODAL ─── */
-  .username-modal {
+  /* ─── AUTH MODALS ─── */
+  .auth-modal {
+    display: none;
     position: fixed;
     inset: 0;
-    background: var(--cream);
+    background: oklch(0.1 0.04 252 / 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     z-index: 5000;
-    display: none;
     align-items: center;
     justify-content: center;
     padding: 20px;
   }
-  .username-modal.show { display: flex; }
-  .username-content {
-    background: var(--paper);
-    border-radius: 24px;
-    padding: 32px 24px;
+  .auth-modal.show { display: flex; }
+  .auth-content {
+    background: var(--paper-2);
+    border-radius: var(--radius);
+    padding: 32px 28px;
     max-width: 380px;
     width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-card);
     text-align: center;
+    position: relative;
   }
-  .username-icon {
-    font-size: 3.5rem;
-    margin-bottom: 12px;
-  }
-  .username-content h2 {
-    font-family: var(--serif);
-    font-size: 1.8rem;
-    font-weight: 900;
-    font-style: italic;
+  .auth-icon { font-size: 3rem; margin-bottom: 12px; }
+  .auth-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--ink);
     margin-bottom: 8px;
-    line-height: 1.1;
+    font-style: italic;
   }
-  .title-gradient { color: var(--usa-red); }
-  .username-subtitle {
+  .auth-subtitle {
     color: var(--ink-soft);
-    font-size: 0.9rem;
-    margin-bottom: 24px;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
     line-height: 1.4;
   }
-  .username-content label {
+  .auth-label {
     display: block;
     text-align: left;
     font-weight: 600;
     font-size: 0.85rem;
-    margin-bottom: 6px;
     color: var(--ink);
-  }
-  .username-content input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    font-family: var(--sans);
-    font-size: 1.05rem;
     margin-bottom: 6px;
-    background: white;
-    text-align: center;
-    font-weight: 600;
+    margin-top: 12px;
   }
-  .username-content input:focus {
-    outline: none;
-    border-color: var(--usa-blue);
-  }
-  .username-hint {
-    font-size: 0.75rem;
-    color: var(--ink-soft);
-    margin-bottom: 20px;
-    text-align: left;
-  }
-  .username-content .btn-primary {
+  .auth-input {
     width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--paper-edge);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    background: var(--paper-2);
+    color: var(--ink);
+    margin-bottom: 4px;
   }
-  .username-error {
-    color: #dc2626;
+  .auth-input:focus { outline: none; border-color: var(--navy); }
+  .auth-hint {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    text-align: left;
+    margin-bottom: 4px;
+  }
+  .auth-hint-small {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    margin: 12px 0;
+  }
+  .auth-close {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: none; border: none;
+    font-size: 1.5rem; cursor: pointer;
+    color: var(--ink-soft);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .auth-close:hover { background: var(--paper-edge); }
+  .auth-error {
+    color: var(--miss);
     font-size: 0.85rem;
     margin-top: 12px;
-    font-weight: 600;
     min-height: 1.2em;
+    font-weight: 600;
   }
-
   .btn-link-skip {
-    background: none;
-    border: none;
-    color: var(--ink-soft, #666);
-    font-size: 0.85rem;
-    cursor: pointer;
+    background: none; border: none;
+    color: var(--ink-soft);
     text-decoration: underline;
+    font-size: 0.9rem;
+    cursor: pointer;
     margin-top: 12px;
-    padding: 4px 8px;
-    font-family: inherit;
+    padding: 8px;
+    font-family: var(--font-ui);
   }
-  .btn-link-skip:hover { color: var(--ink, #1a1a1a); }
+  .btn-link-skip:hover { color: var(--ink); }
   .btn-link-skip:disabled { opacity: 0.5; cursor: wait; }
 
   /* ─── ALREADY PLAYED SCREEN ─── */
@@ -1362,21 +1370,36 @@
 <body>
 <div id="app">
 
-  <!-- USERNAME MODAL (first visit) -->
-  <div id="username-modal" class="username-modal">
-    <div class="username-content">
-      <div class="username-icon">🌍</div>
-      <h2>Welcome to <span class="title-gradient">GeoHistory</span></h2>
-      <p class="username-subtitle">Pick a username to track your scores and compete with friends.</p>
-      
-      <label>Username</label>
-      <input type="text" id="username-input" placeholder="e.g., trevor_p" maxlength="20" autocomplete="off" />
-      <div class="username-hint">3-20 characters. Letters, numbers, and underscores only.</div>
-      
-      <button class="btn-primary" id="username-submit" onclick="submitUsername()">Let's Play</button>
-      <button class="btn-link-skip" onclick="playAnonymously()">Or just play (auto-generate name)</button>
-      
-      <div id="username-error" class="username-error"></div>
+  <!-- HOME SCREEN (React — replaces old splash + already-played screens) -->
+  <div id="home-root" style="position:absolute;inset:0;z-index:3500;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--paper);"></div>
+
+  <!-- AUTH MODAL — sign in / sign up -->
+  <div id="auth-modal" class="auth-modal">
+    <div class="auth-content">
+      <button class="auth-close" id="auth-close-btn" onclick="closeAuthModal()" aria-label="Close">×</button>
+      <div class="auth-icon">🌍</div>
+      <h2 class="auth-title">Keep your streak alive</h2>
+      <p class="auth-subtitle">Sign up with your email to save your scores and join groups.</p>
+      <label class="auth-label">Display Name</label>
+      <input type="text" id="auth-name-input" class="auth-input" placeholder="e.g., Trevor" maxlength="20" autocomplete="off" />
+      <div class="auth-hint">3–20 characters. This is what other players see on the leaderboard.</div>
+      <label class="auth-label">Email</label>
+      <input type="email" id="auth-email-input" class="auth-input" placeholder="you@example.com" maxlength="100" autocomplete="email" />
+      <div class="auth-hint">For sign-in only. Never shown publicly.</div>
+      <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()" style="width:100%;margin-top:16px;">Send Magic Link</button>
+      <button class="btn-link-skip" id="auth-skip-btn" onclick="closeAuthModal()">Or play as a guest</button>
+      <div id="auth-error" class="auth-error"></div>
+    </div>
+  </div>
+
+  <!-- AUTH SENT MODAL — "check your email" -->
+  <div id="auth-sent-modal" class="auth-modal">
+    <div class="auth-content">
+      <div class="auth-icon">📧</div>
+      <h2 class="auth-title">Check your email</h2>
+      <p class="auth-subtitle">We sent a magic link to <strong id="auth-sent-email">your email</strong>. Click it to sign in.</p>
+      <p class="auth-hint-small">If you don't see it, check spam.</p>
+      <button class="btn btn-ghost" onclick="closeAuthSentModal()">Got it</button>
     </div>
   </div>
 
@@ -1605,6 +1628,9 @@
     </div>
     <div class="breakdown" id="breakdown"></div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div id="anon-signup-cta" style="display:none;">
+        <button onclick="openAuthModal()" style="width:100%;padding:14px;border-radius:16px;border:none;cursor:pointer;font-family:var(--font-ui);font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:white;box-shadow:0 4px 0 oklch(0.45 0.17 50);">💌 Keep your streak alive — sign up free</button>
+      </div>
       <button class="btn-primary" id="end-share-btn" onclick="shareScore()">Share Score 📤</button>
       <button class="btn-secondary" id="end-return-btn" onclick="returnToToday()" style="display:none;">↩️ Return to Today</button>
       <div class="btn-split" id="end-split-btns"><button class="btn-split-half" id="end-leaderboard-btn" onclick="viewLeaderboard()">Leaderboard 🏆</button><div class="btn-split-divider"></div><button class="btn-split-half" id="end-stats-btn" onclick="viewStats()">Stats 📊</button></div>
@@ -1616,6 +1642,341 @@
   </div>
 
 </div>
+
+<!-- ═══════════════════════════════════════════════════════
+     REACT HOME COMPONENT
+     Uses React.createElement (no build step, no Babel).
+     Bridged to existing vanilla JS via window.* functions.
+     ═══════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  const h = React.createElement;
+  const { useState, useEffect } = React;
+
+  function dotClassesFromDetails(details) {
+    if (!details || !Array.isArray(details)) return [];
+    return details.map(function(q) {
+      if (q.dailyDouble) return q.dailyDouble.won ? 'good' : 'miss';
+      if (q.tierName === 'Elite' || q.tierName === 'Great') return 'good';
+      if (q.tierName === 'Good') return 'ok';
+      if (q.distMiles !== undefined) {
+        if (q.distMiles <= 200) return 'good';
+        if (q.distMiles <= 600) return 'ok';
+      }
+      return 'miss';
+    });
+  }
+
+  function Wordmark({ streak, username, isGuest }) {
+    var rightSlot;
+    if (streak >= 2) {
+      rightSlot = h('span', {
+        className: 'pill',
+        style: { background: 'var(--slate)', color: 'var(--brass)' }
+      },
+        h('span', { style: { animation: 'flamePulse 1.8s ease-in-out infinite', display: 'inline-block' } }, '🔥'),
+        streak
+      );
+    } else if (isGuest) {
+      rightSlot = h('button', {
+        onClick: function() { window.openAuthModal(); },
+        style: {
+          background: 'none', border: '1.5px solid var(--paper-edge)',
+          borderRadius: 999, padding: '5px 12px', cursor: 'pointer',
+          fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 12,
+          color: 'var(--ink-soft)',
+        }
+      }, 'Sign In →');
+    } else {
+      rightSlot = h('button', {
+        onClick: function() { window.signOut(); },
+        style: {
+          background: 'none', border: 'none',
+          cursor: 'pointer', fontFamily: 'var(--font-ui)',
+          fontSize: 12, color: 'var(--ink-faint)', padding: '5px 8px',
+        }
+      }, 'Sign Out');
+    }
+
+    return h('div', {
+      style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }
+    },
+      h('span', { className: 'wordmark', style: { fontSize: 24 } },
+        h('span', { className: 'geo' }, 'Geo'),
+        h('span', { className: 'hist' }, 'History')
+      ),
+      rightSlot
+    );
+  }
+
+  function TodayCard({ theme, onPlay }) {
+    var dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    return h('div', {
+      className: 'card rise atlas-grid',
+      style: { position: 'relative', overflow: 'hidden', padding: 0, marginBottom: 14 }
+    },
+      h('div', { style: { height: 5, background: 'linear-gradient(90deg, var(--crimson), var(--navy))' } }),
+      h('div', { style: { padding: '16px 18px 18px', position: 'relative' } },
+        h('div', { className: 'eyebrow', style: { color: 'var(--crimson)', marginBottom: 9 } }, dateStr),
+        h('div', { className: 'display', style: { fontSize: 28, lineHeight: 1.05, marginBottom: 7 } },
+          theme.name || "Today's Round"
+        ),
+        h('button', {
+          className: 'btn btn-crimson',
+          style: { fontSize: 17, marginTop: theme.name ? 12 : 16 },
+          onClick: onPlay
+        }, '▶ Play today\'s round')
+      )
+    );
+  }
+
+  function CountdownTimer() {
+    var _s = useState('--:--:--');
+    var label = _s[0], setLabel = _s[1];
+    useEffect(function() {
+      function tick() {
+        var now = new Date();
+        var next = new Date();
+        next.setUTCHours(8, 0, 0, 0); // 3 AM EST = 8 AM UTC
+        if (now >= next) next.setUTCDate(next.getUTCDate() + 1);
+        var diff = Math.max(0, next - now);
+        var hh = String(Math.floor(diff / 3.6e6)).padStart(2, '0');
+        var mm = String(Math.floor((diff % 3.6e6) / 6e4)).padStart(2, '0');
+        var ss = String(Math.floor((diff % 6e4) / 1e3)).padStart(2, '0');
+        setLabel(hh + ':' + mm + ':' + ss);
+      }
+      tick();
+      var id = setInterval(tick, 1000);
+      return function() { clearInterval(id); };
+    }, []);
+    return h('span', { className: 'mono' }, label);
+  }
+
+  function WeekStrip({ days, onPlayDate }) {
+    return h('div', {
+      style: { display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 5 }
+    },
+      days.map(function(d) {
+        var playable = d.state === 'today' || d.state === 'missed';
+        var isPlayed = d.state === 'played' || d.state === 'played-today';
+        return h('button', {
+          key: d.date,
+          onClick: function() {
+            if (!playable) return;
+            if (d.state === 'today') window.startGame();
+            else onPlayDate(d.date);
+          },
+          style: {
+            cursor: playable ? 'pointer' : 'default',
+            border: 'none', padding: '9px 0 8px', borderRadius: 11,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+            background:
+              d.state === 'today' ? 'var(--crimson)' :
+              isPlayed ? 'var(--slate-2)' : 'transparent',
+            outline: d.state === 'missed' ? '1.5px dashed oklch(1 0 0 / 0.28)' : 'none',
+            outlineOffset: -1,
+            opacity: (d.state === 'locked' || d.state === 'gated') ? 0.34 : 1,
+            boxShadow: d.state === 'today' ? '0 5px 14px -7px var(--crimson)' : 'none',
+            transition: 'transform .12s',
+            minHeight: 52, justifyContent: 'center',
+          }
+        },
+          h('span', {
+            className: 'mono',
+            style: {
+              fontSize: 9, fontWeight: 700, letterSpacing: '.06em',
+              color: d.state === 'today' ? 'oklch(1 0 0 / 0.85)' : 'var(--on-slate-soft)',
+            }
+          }, d.label),
+          isPlayed && d.score != null && h('span', {
+            className: 'mono',
+            style: {
+              fontSize: 12, fontWeight: 700,
+              color: d.state === 'played-today' ? 'var(--brass)' : 'var(--on-slate)'
+            }
+          }, d.score),
+          d.state === 'today' && h(React.Fragment, null,
+            h('span', { style: { fontSize: 13, lineHeight: 1, color: '#fff' } }, '▶'),
+            h('span', { style: { fontSize: 7.5, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.08em' } }, 'Play')
+          ),
+          d.state === 'missed' && h(React.Fragment, null,
+            h('span', { style: { fontSize: 15, lineHeight: 1, color: 'oklch(1 0 0 / 0.5)' } }, '＋'),
+            h('span', { style: { fontSize: 7.5, fontWeight: 700, color: 'oklch(1 0 0 / 0.5)' } }, 'open')
+          ),
+          (d.state === 'locked' || d.state === 'gated') && h('span', {
+            style: { fontSize: 11, lineHeight: 2, color: 'var(--on-slate-soft)' }
+          }, '🔒')
+        );
+      })
+    );
+  }
+
+  function GeoHistoryHome(props) {
+    var initData = props.initData;
+    var streak = props.streak;
+    var todayTheme = props.todayTheme;
+    var weekDays = props.weekDays;
+    var loading = props.loading;
+    var isGuest = props.isGuest;
+
+    var played = !!(initData && initData.todayScore);
+    var todayScore = played ? initData.todayScore.total_score : null;
+    var todayDots = played ? dotClassesFromDetails(initData.todayScore.question_details) : [];
+
+    var missedDays = weekDays.filter(function(d) { return d.state === 'missed'; });
+    var nextMissed = missedDays[0];
+
+    if (loading) {
+      return h('div', {
+        style: {
+          display: 'flex', flexDirection: 'column', height: '100vh',
+          alignItems: 'center', justifyContent: 'center', background: 'var(--paper)'
+        }
+      },
+        h('span', { className: 'mono', style: { color: 'var(--ink-faint)', fontSize: 13 } }, 'Loading…')
+      );
+    }
+
+    return h('div', {
+      className: 'screen-anim',
+      style: {
+        display: 'flex', flexDirection: 'column', minHeight: '100%',
+        padding: 'max(env(safe-area-inset-top), 44px) 18px max(env(safe-area-inset-bottom), 28px)',
+        background: 'var(--paper)',
+        maxWidth: 412, marginLeft: 'auto', marginRight: 'auto', width: '100%',
+      }
+    },
+      h(Wordmark, { streak: streak, username: initData.username, isGuest: isGuest }),
+
+      !played && h(TodayCard, { theme: todayTheme, onPlay: function() { window.hideHomeRoot(); window.startGame(); } }),
+
+      // Dark streak / today-score card
+      h('div', {
+        className: 'card-dark rise',
+        style: { padding: '20px 20px 18px', marginBottom: 14 }
+      },
+        !played
+          ? h(React.Fragment, null,
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 } },
+                h('div', null,
+                  h('div', { className: 'eyebrow', style: { color: 'var(--on-slate-soft)' } }, 'Current streak'),
+                  h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 } },
+                    h('span', { className: 'display', style: { fontSize: 52, color: 'var(--on-slate)', lineHeight: 0.9 } }, streak),
+                    h('span', { style: { fontSize: 15, color: 'var(--brass)', fontWeight: 700 } }, 'days 🔥')
+                  )
+                )
+              ),
+              h(WeekStrip, { days: weekDays, onPlayDate: function(date) { window.hideHomeRoot(); window.startPracticeGame(date); } })
+            )
+          : h(React.Fragment, null,
+              h('div', { className: 'eyebrow', style: { color: 'var(--on-slate-soft)', textAlign: 'center', marginBottom: 4 } },
+                'Your score · ' + todayTheme.name
+              ),
+              h('div', {
+                className: 'display',
+                style: { fontSize: 68, color: 'var(--on-slate)', textAlign: 'center', lineHeight: 1, margin: '4px 0 10px' }
+              }, todayScore),
+              todayDots.length > 0 && h('div', {
+                style: { display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 14 }
+              },
+                todayDots.map(function(cls, i) {
+                  return h('i', { key: i, className: 'dot ' + cls, style: { width: 14, height: 14 } });
+                })
+              ),
+              h(WeekStrip, { days: weekDays, onPlayDate: function(date) { window.hideHomeRoot(); window.startPracticeGame(date); } })
+            )
+      ),
+
+      // Countdown after playing
+      played && h('div', {
+        className: 'card rise',
+        style: { padding: '13px 16px', marginBottom: 12, textAlign: 'center', animationDelay: '.05s' }
+      },
+        h('div', { style: { fontSize: 13, color: 'var(--ink-soft)' } }, 'Next round in'),
+        h('div', { style: { fontSize: 20, fontWeight: 700, color: 'var(--navy)', fontFamily: 'var(--font-mono)' } },
+          h(CountdownTimer, null)
+        )
+      ),
+
+      // Catch-up card (missed days)
+      nextMissed && (
+        played
+          ? h('button', {
+              className: 'card rise',
+              style: {
+                padding: '14px 16px', marginBottom: 12, width: '100%', textAlign: 'left',
+                border: '1.5px dashed var(--brass)', background: 'var(--paper-2)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 12, animationDelay: '.1s',
+              },
+              onClick: function() { window.hideHomeRoot(); window.startPracticeGame(nextMissed.date); }
+            },
+              h('span', { style: { fontSize: 22 } }, '🗺️'),
+              h('div', { style: { flex: 1 } },
+                h('div', { style: { fontWeight: 800, fontSize: 15 } }, 'Finish your week'),
+                h('div', { style: { fontSize: 13, color: 'var(--ink-soft)' } },
+                  h('b', { style: { color: 'var(--brass-deep)' } }, nextMissed.theme || 'past round'), ' is still open'
+                )
+              ),
+              h('span', { style: { fontSize: 18, color: 'var(--brass-deep)' } }, '→')
+            )
+          : h('div', {
+              className: 'card rise',
+              style: {
+                padding: '14px 16px', marginBottom: 12,
+                border: '1.5px dashed var(--paper-edge)', background: 'transparent',
+                display: 'flex', alignItems: 'center', gap: 12, animationDelay: '.1s', opacity: 0.75,
+              }
+            },
+              h('span', { style: { fontSize: 20, filter: 'grayscale(1)', opacity: 0.7 } }, '🔒'),
+              h('div', { style: { flex: 1 } },
+                h('div', { style: { fontWeight: 800, fontSize: 15, color: 'var(--ink-soft)' } }, 'Catch up on your week'),
+                h('div', { style: { fontSize: 13, color: 'var(--ink-faint)' } }, 'Finish today to replay past rounds')
+              )
+            )
+      ),
+
+      // Friends placeholder
+      h('div', {
+        className: 'card rise',
+        style: { padding: '16px', marginBottom: 12, animationDelay: '.15s' }
+      },
+        h('div', { className: 'eyebrow', style: { marginBottom: 10 } }, 'Friends · today'),
+        h('div', {
+          style: { textAlign: 'center', padding: '10px 0', color: 'var(--ink-faint)', fontSize: 13 }
+        }, 'Groups coming soon')
+      ),
+
+      // Footer buttons
+      h('div', {
+        className: 'rise',
+        style: {
+          display: 'grid',
+          gridTemplateColumns: played ? '1fr 1fr 1fr' : '1fr 1fr',
+          gap: 10, animationDelay: '.2s'
+        }
+      },
+        played && h('button', {
+          className: 'btn btn-dark',
+          style: { fontSize: 14, padding: '12px 8px' },
+          onClick: function() { window.shareYesterday(); }
+        }, 'Share 📤'),
+        h('button', {
+          className: 'btn btn-dark',
+          style: { fontSize: 14, padding: '12px 8px' },
+          onClick: function() { window.viewLeaderboard(); }
+        }, 'Ranks 🏆'),
+        h('button', {
+          className: 'btn btn-dark',
+          style: { fontSize: 14, padding: '12px 8px' },
+          onClick: function() { window.viewStats(); }
+        }, 'Stats 📊')
+      )
+    );
+  }
+
+  window.GeoHistoryHome = GeoHistoryHome;
+})();
+</script>
 
 <script>
 // Initialize Supabase client first
@@ -1645,186 +2006,313 @@ function getDailyDoubleQuestion() {
   return -1;
 }
 
-// Validate username format
-function validateUsername(username) {
-  if (!username) return 'Please enter a username';
-  if (username.length < 3) return 'Username must be at least 3 characters';
-  if (username.length > 20) return 'Username must be 20 characters or less';
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Only letters, numbers, and underscores allowed';
-  return null; // Valid
+// ─── AUTH VALIDATION ───────────────────────────────────────────────────
+function validateDisplayName(name) {
+  if (!name) return 'Please enter a display name';
+  if (name.length < 3) return 'Must be at least 3 characters';
+  if (name.length > 20) return 'Must be 20 characters or less';
+  return null;
 }
 
-// Submit username (called from button click)
-async function submitUsername() {
-  const input = document.getElementById('username-input');
-  const errorEl = document.getElementById('username-error');
-  const submitBtn = document.getElementById('username-submit');
-  const username = input.value.trim();
-  
-  // Validate
-  const validationError = validateUsername(username);
-  if (validationError) {
-    errorEl.textContent = validationError;
-    return;
+function validateEmail(email) {
+  if (!email) return 'Please enter your email';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email';
+  return null;
+}
+
+// ─── AUTH MODAL CONTROLS ────────────────────────────────────────────────
+function openAuthModal(allowClose) {
+  if (allowClose === undefined) allowClose = true;
+  document.getElementById('auth-error').textContent = '';
+  var closeBtn = document.getElementById('auth-close-btn');
+  var skipBtn = document.getElementById('auth-skip-btn');
+  if (allowClose) {
+    if (closeBtn) closeBtn.style.display = '';
+    if (skipBtn) skipBtn.style.display = '';
+  } else {
+    if (closeBtn) closeBtn.style.display = 'none';
+    if (skipBtn) skipBtn.style.display = 'none';
   }
-  
+  document.getElementById('auth-modal').classList.add('show');
+  setTimeout(function() {
+    var nameInput = document.getElementById('auth-name-input');
+    if (nameInput) nameInput.focus();
+  }, 100);
+}
+window.openAuthModal = openAuthModal;
+
+function closeAuthModal() {
+  document.getElementById('auth-modal').classList.remove('show');
+}
+window.closeAuthModal = closeAuthModal;
+
+function closeAuthSentModal() {
+  document.getElementById('auth-sent-modal').classList.remove('show');
+}
+window.closeAuthSentModal = closeAuthSentModal;
+
+// ─── SUBMIT MAGIC LINK ──────────────────────────────────────────────────
+async function submitAuth() {
+  var nameInput = document.getElementById('auth-name-input');
+  var emailInput = document.getElementById('auth-email-input');
+  var errorEl = document.getElementById('auth-error');
+  var submitBtn = document.getElementById('auth-submit');
+
+  var displayName = nameInput.value.trim();
+  var email = emailInput.value.trim().toLowerCase();
+
+  var nameError = validateDisplayName(displayName);
+  if (nameError) { errorEl.textContent = nameError; return; }
+  var emailError = validateEmail(email);
+  if (emailError) { errorEl.textContent = emailError; return; }
+
   errorEl.textContent = '';
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Checking...';
-  
+  submitBtn.textContent = 'Sending…';
+
   try {
-    // Check if username exists (case-insensitive)
-    const { data: existing } = await supabaseClient
-      .from('users')
-      .select('id, username, client_id')
-      .ilike('username', username)
-      .maybeSingle();
-    
-    let userId;
-    let clientId = localStorage.getItem('geo_client_id');
-    if (!clientId) {
-      clientId = 'client_' + Math.random().toString(36).slice(2, 11);
-    }
-    
-    if (existing) {
-      // Username taken - check if it belongs to this device
-      if (existing.client_id === clientId) {
-        userId = existing.id;
-      } else {
-        errorEl.textContent = 'Username is taken. Try another!';
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Let's Play";
-        return;
-      }
-    } else {
-      // Create new user
-      const { data: newUser, error } = await supabaseClient
-        .from('users')
-        .insert({
-          username: username,
-          client_id: clientId
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      userId = newUser.id;
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('geo_user_id', userId);
-    localStorage.setItem('geo_username', username);
-    localStorage.setItem('geo_client_id', clientId);
-    window.currentUserId = userId;
-    window.currentUsername = username;
-    
-    // Hide modal and check if they've played today
-    document.getElementById('username-modal').classList.remove('show');
-    await checkDailyPlay();
-    
+    localStorage.setItem('pending_display_name', displayName);
+    var { error } = await supabaseClient.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + '/auth-callback.html' }
+    });
+    if (error) throw error;
+
+    document.getElementById('auth-modal').classList.remove('show');
+    document.getElementById('auth-sent-email').textContent = email;
+    document.getElementById('auth-sent-modal').classList.add('show');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send Magic Link';
   } catch (e) {
-    console.error('Username error:', e);
+    console.error('Auth error:', e);
     errorEl.textContent = 'Error: ' + e.message;
     submitBtn.disabled = false;
-    submitBtn.textContent = "Let's Play";
+    submitBtn.textContent = 'Send Magic Link';
   }
 }
+window.submitAuth = submitAuth;
 
-// Auto-generate a "player1234" username and create user
-async function playAnonymously() {
-  const errorEl = document.getElementById('username-error');
-  const skipBtn = document.querySelector('.btn-link-skip');
-  const submitBtn = document.getElementById('username-submit');
-  
-  errorEl.textContent = '';
-  if (skipBtn) skipBtn.disabled = true;
-  if (submitBtn) submitBtn.disabled = true;
-  if (skipBtn) skipBtn.textContent = 'Setting up...';
-  
+// ─── SIGN OUT ───────────────────────────────────────────────────────────
+async function signOut() {
+  try { await supabaseClient.auth.signOut(); } catch (e) { console.error('Sign out error:', e); }
+  window.currentUserId = null;
+  window.currentUsername = null;
+  window.currentUserEmail = null;
+  window.isGuest = true;
+  localStorage.removeItem('geo_user_id');
+  localStorage.removeItem('geo_username');
+  location.reload();
+}
+window.signOut = signOut;
+
+// ─── GUEST SESSION ──────────────────────────────────────────────────────
+function generateGuestName() {
+  return 'player' + Math.floor(1000 + Math.random() * 9000);
+}
+
+function startGuestSession() {
+  var guestName = localStorage.getItem('geo_guest_name');
+  if (!guestName) {
+    guestName = generateGuestName();
+    localStorage.setItem('geo_guest_name', guestName);
+  }
+  window.currentUserId = null;
+  window.currentUsername = guestName;
+  window.isGuest = true;
+}
+
+// ─── LOAD AUTH SESSION ──────────────────────────────────────────────────
+async function loadAuthSession() {
   try {
-    let clientId = localStorage.getItem('geo_client_id');
-    if (!clientId) {
-      clientId = 'client_' + Math.random().toString(36).slice(2, 11);
-    }
-    
-    // Try up to 8 times to find an available "playerXXXX" name
-    let username = null;
-    let userId = null;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const candidate = 'player' + Math.floor(1000 + Math.random() * 9000);
-      const { data: existing } = await supabaseClient
+    var { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && session.user) {
+      var authId = session.user.id;
+      var email = session.user.email;
+
+      var { data: userRow } = await supabaseClient
         .from('users')
-        .select('id')
-        .ilike('username', candidate)
+        .select('id, display_name')
+        .eq('auth_id', authId)
         .maybeSingle();
-      
-      if (!existing) {
-        // Available — create
-        const { data: newUser, error } = await supabaseClient
+
+      if (!userRow) {
+        var pendingName = localStorage.getItem('pending_display_name') || email.split('@')[0];
+        var { data: newRow, error: insertErr } = await supabaseClient
           .from('users')
-          .insert({ username: candidate, client_id: clientId })
+          .insert({ auth_id: authId, email: email, display_name: pendingName })
           .select()
           .single();
-        
-        if (error) throw error;
-        username = candidate;
-        userId = newUser.id;
-        break;
+        if (insertErr) { console.error('User insert error:', insertErr); return false; }
+        userRow = newRow;
+        localStorage.removeItem('pending_display_name');
       }
+
+      window.currentUserId = userRow.id;
+      window.currentUsername = userRow.display_name;
+      window.currentUserEmail = email;
+      window.isGuest = false;
+      localStorage.setItem('geo_user_id', userRow.id);
+      localStorage.setItem('geo_username', userRow.display_name);
+      return true;
     }
-    
-    if (!username) {
-      throw new Error('Could not generate a unique name. Try again or pick your own.');
-    }
-    
-    localStorage.setItem('geo_user_id', userId);
-    localStorage.setItem('geo_username', username);
-    localStorage.setItem('geo_client_id', clientId);
-    window.currentUserId = userId;
-    window.currentUsername = username;
-    
-    document.getElementById('username-modal').classList.remove('show');
-    await checkDailyPlay();
-    
   } catch (e) {
-    console.error('Anonymous play error:', e);
-    errorEl.textContent = 'Error: ' + e.message;
-    if (skipBtn) {
-      skipBtn.disabled = false;
-      skipBtn.textContent = 'Or just play (auto-generate name)';
-    }
-    if (submitBtn) submitBtn.disabled = false;
+    console.error('Auth session load error:', e);
   }
+  return false;
 }
 
-// Check if user has played today
+// ─── CHECK DAILY PLAY (guests always go to home) ────────────────────────
 async function checkDailyPlay() {
-  const userId = window.currentUserId;
-  const gameDate = getGameDate();
-  
+  var userId = window.currentUserId;
+  var gameDate = getGameDate();
+
+  if (window.isGuest || !userId) {
+    await showHome(null);
+    return;
+  }
+
   try {
-    const { data: todayScore } = await supabaseClient
+    var { data: todayScore } = await supabaseClient
       .from('scores')
       .select('total_score, question_details')
       .eq('user_id', userId)
       .eq('date', gameDate)
       .maybeSingle();
-    
-    if (todayScore) {
-      // Already played - show the "already played" screen
-      showAlreadyPlayed(todayScore);
-    } else {
-      // First time today - show splash
-      showSplash();
-    }
+    await showHome(todayScore || null);
   } catch (e) {
     console.error('Daily check error:', e);
-    // If there's an error, just show splash
-    showSplash();
+    await showHome(null);
   }
 }
 
-// Show the splash screen
+// Show/hide home root
+function hideHomeRoot() {
+  document.getElementById('home-root').style.display = 'none';
+}
+
+// Mount the React Home screen with real data
+let _homeReactRoot = null;
+async function showHome(scoreData) {
+  const el = document.getElementById('home-root');
+  el.style.display = 'block';
+
+  // Store for sharing (replaces old window.yesterdayScore path)
+  if (scoreData) window.yesterdayScore = scoreData;
+
+  // Show loading state immediately
+  if (!_homeReactRoot) {
+    _homeReactRoot = ReactDOM.createRoot(el);
+  }
+  _homeReactRoot.render(
+    React.createElement(window.GeoHistoryHome, {
+      initData: { todayScore: scoreData, username: window.currentUsername },
+      streak: 0,
+      todayTheme: { name: '' },
+      weekDays: [],
+      loading: true,
+      isGuest: !!window.isGuest,
+    })
+  );
+
+  // Fetch all data in parallel
+  const [streak, todayTheme, weekDays] = await Promise.all([
+    calculateStreak(),
+    loadTodayThemeForHome(),
+    loadWeekStripData(scoreData),
+  ]);
+
+  _homeReactRoot.render(
+    React.createElement(window.GeoHistoryHome, {
+      initData: { todayScore: scoreData, username: window.currentUsername },
+      streak,
+      todayTheme,
+      weekDays,
+      loading: false,
+      isGuest: !!window.isGuest,
+    })
+  );
+}
+
+async function loadTodayThemeForHome() {
+  try {
+    const { data: round } = await supabaseClient
+      .from('daily_rounds')
+      .select('theme')
+      .eq('date', getGameDate())
+      .maybeSingle();
+    return round ? { name: round.theme || '' } : { name: '' };
+  } catch (e) {
+    return { name: '' };
+  }
+}
+
+async function loadWeekStripData(todayScoreData) {
+  try {
+    const todayStr = getGameDate();
+    const todayDate = new Date(todayStr + 'T12:00:00Z');
+    const dow = todayDate.getUTCDay(); // 0=Sun, 1=Mon…
+    const mondayOffset = dow === 0 ? -6 : -(dow - 1);
+    const LABELS = ['M','T','W','T','F','S','S'];
+
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(todayDate);
+      d.setUTCDate(todayDate.getUTCDate() + mondayOffset + i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    const userId = window.currentUserId;
+    const pastDates = dates.filter(d => d < todayStr);
+
+    const [scoresRes, roundsRes] = await Promise.all([
+      userId
+        ? supabaseClient.from('scores').select('date, total_score, question_details')
+            .eq('user_id', userId).in('date', dates)
+        : Promise.resolve({ data: [] }),
+      pastDates.length > 0
+        ? supabaseClient.from('daily_rounds').select('date, theme').in('date', pastDates)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const scores = scoresRes.data || [];
+    const themes = {};
+    (roundsRes.data || []).forEach(r => { themes[r.date] = r.theme; });
+
+    const todayPlayed = !!todayScoreData;
+
+    return dates.map((dateStr, i) => {
+      const isToday = dateStr === todayStr;
+      const isFuture = dateStr > todayStr;
+      const scoreRow = scores.find(s => s.date === dateStr);
+
+      let state;
+      if (isToday) {
+        state = todayPlayed ? 'played-today' : 'today';
+      } else if (isFuture) {
+        state = 'locked';
+      } else if (scoreRow) {
+        state = 'played';
+      } else {
+        state = todayPlayed ? 'missed' : 'gated';
+      }
+
+      return {
+        date: dateStr,
+        label: LABELS[i],
+        state,
+        score: isToday
+          ? (todayPlayed ? todayScoreData.total_score : null)
+          : (scoreRow ? scoreRow.total_score : null),
+        theme: themes[dateStr] || '',
+      };
+    });
+  } catch (e) {
+    console.error('Week strip error:', e);
+    return [];
+  }
+}
+
+// Show the splash screen (kept for fallback — not used in normal flow)
 function showSplash() {
   document.getElementById('splash').classList.add('show');
   loadTodayTheme();
@@ -1958,33 +2446,17 @@ async function loadTodayTheme() {
   }
 }
 
-// Main initialization - check for username on page load
+// Main initialization — auth-aware
 async function initApp() {
-  const savedUserId = localStorage.getItem('geo_user_id');
-  const savedUsername = localStorage.getItem('geo_username');
-  
-  if (savedUserId && savedUsername) {
-    // Returning user - check if they've played today
-    window.currentUserId = savedUserId;
-    window.currentUsername = savedUsername;
-    await checkDailyPlay();
-  } else {
-    // New user - show username modal
-    document.getElementById('username-modal').classList.add('show');
-    // Focus the input
-    setTimeout(() => {
-      const input = document.getElementById('username-input');
-      if (input) input.focus();
-    }, 100);
-  }
-  
-  // Allow Enter key to submit username
-  const usernameInput = document.getElementById('username-input');
-  if (usernameInput) {
-    usernameInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') submitUsername();
-    });
-  }
+  var isSignedIn = await loadAuthSession();
+  if (!isSignedIn) startGuestSession();
+  await checkDailyPlay();
+
+  // Enter key submits auth modal
+  var emailInput = document.getElementById('auth-email-input');
+  if (emailInput) emailInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitAuth(); });
+  var nameInput = document.getElementById('auth-name-input');
+  if (nameInput) nameInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitAuth(); });
 }
 
 // Run on load
@@ -2253,6 +2725,7 @@ function initMap() {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function startGame() {
+  hideHomeRoot();
   $('splash').classList.remove('show');
   
   // Determine which question gets the daily double based on the game date
@@ -2507,12 +2980,13 @@ function escapeHtmlGame(s) {
 
 async function startPracticeGame(date) {
   closePastGames();
+  hideHomeRoot();
   practiceMode = true;
   practiceDate = date;
-  
+
   // Show practice badge
   $('practice-badge').classList.add('show');
-  
+
   // Hide already-played screen + end screen if showing
   $('already-played').classList.remove('show');
   $('end-screen').classList.remove('show');
@@ -2946,6 +3420,12 @@ function showEndScreen() {
   const shareBtn = document.getElementById('end-share-btn');
   const returnBtn = document.getElementById('end-return-btn');
   const splitBtns = document.getElementById('end-split-btns');
+
+  // Show sign-up CTA for guest users on real (non-practice) games
+  const anonCta = document.getElementById('anon-signup-cta');
+  if (anonCta) {
+    anonCta.style.display = (!practiceMode && window.isGuest) ? 'block' : 'none';
+  }
   if (practiceMode) {
     // Hide Share, show Return to Today in its place
     if (shareBtn) shareBtn.style.display = 'none';
@@ -3069,12 +3549,15 @@ function confirmDailyDouble() {
 
 // Save score to Supabase
 async function saveScore(finalScore) {
-  // Skip saving in practice mode — stats stay clean
   if (practiceMode) {
     console.log('Practice mode: score NOT saved (', finalScore, 'pts)');
     return;
   }
-  
+  if (window.isGuest || !window.currentUserId) {
+    console.log('Guest mode: score NOT saved. End screen will prompt sign-up.');
+    return;
+  }
+
   try {
     const gameDate = getGameDate();
     
