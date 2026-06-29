@@ -74,44 +74,34 @@
     flex-shrink: 0;
     position: relative;
   }
-  /* Patriotic stripe under topbar */
-  #topbar::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: -3px;
-    height: 3px;
-    background: linear-gradient(to right,
-      var(--usa-red) 0%, var(--usa-red) 50%,
-      var(--usa-blue) 50%, var(--usa-blue) 100%);
-  }
-
   .brand {
     font-family: var(--serif);
-    font-weight: 900;
+    font-weight: 700;
     font-size: 1.15rem;
     letter-spacing: -0.02em;
     color: var(--ink);
     font-style: italic;
   }
-  .brand span { color: var(--usa-red); }
+  .brand span { color: var(--crimson); }
 
   /* Progress bar — replaces dots, fills as you score */
   .pip-row {
-    width: 120px;
-    height: 8px;
-    border-radius: 4px;
-    background: var(--border);
-    overflow: hidden;
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 5px;
     flex-shrink: 0;
   }
-  .progress-fill {
-    height: 100%;
-    width: 0%;
-    background: #dc2626; /* red default */
-    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s;
-    border-radius: 4px;
+  .pip {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: oklch(0.5 0 0 / 0.16);
+    transition: background 0.3s;
   }
+  .pip.good { background: var(--good); box-shadow: inset 0 -2px 3px oklch(0 0 0 / 0.22), inset 0 1px 1px oklch(1 0 0 / 0.25); }
+  .pip.ok   { background: var(--ok);   box-shadow: inset 0 -2px 3px oklch(0 0 0 / 0.22), inset 0 1px 1px oklch(1 0 0 / 0.25); }
+  .pip.miss { background: var(--miss); box-shadow: inset 0 -2px 3px oklch(0 0 0 / 0.22), inset 0 1px 1px oklch(1 0 0 / 0.25); }
 
   /* Score-side cluster: bar + chip together on the right */
   .score-cluster {
@@ -122,7 +112,7 @@
   }
 
   .score-chip {
-    background: #dc2626; /* matches red default */
+    background: var(--crimson);
     color: white;
     padding: 6px 12px;
     border-radius: 100px;
@@ -131,7 +121,6 @@
     font-weight: 700;
     min-width: 52px;
     text-align: center;
-    transition: background-color 0.4s;
   }
 
   /* Pop animation — bar + chip "scale up" 3 times on green-worthy answers */
@@ -212,16 +201,9 @@
   }
   #clue-card.collapsed .clue-header { margin-bottom: 0; }
 
-  .clue-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
   .q-tag {
-    background: var(--ink);
-    color: var(--cream);
+    background: var(--slate);
+    color: var(--on-slate);
     font-size: 0.65rem;
     font-weight: 700;
     padding: 3px 8px;
@@ -229,7 +211,7 @@
     font-family: var(--mono);
   }
   .pts-tag {
-    background: var(--usa-red);
+    background: var(--crimson);
     color: white;
     font-size: 0.65rem;
     font-weight: 700;
@@ -257,12 +239,15 @@
 
   .clue-title {
     font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.25rem;
-    line-height: 1.2;
-    color: var(--ink);
-    margin-bottom: 10px;
+    font-size: 1.0625rem;
     font-style: italic;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .clue-body {
@@ -276,15 +261,7 @@
     opacity: 0;
   }
 
-  .clue-year {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 0.85rem;
-    color: var(--usa-red);
-    letter-spacing: 0.04em;
-    margin-bottom: 6px;
-    font-style: italic;
-  }
+  .clue-year { display: none; }
 
   .clue-text {
     font-size: 1.05rem;
@@ -780,102 +757,61 @@
   /* ─── RESULT SHEET ─── */
   #result-sheet {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--paper);
-    border-radius: 24px 24px 0 0;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-    padding: 20px 20px max(env(safe-area-inset-bottom), 20px);
+    bottom: 0; left: 0; right: 0;
+    background: var(--paper-2);
+    border-radius: 26px 26px 0 0;
+    box-shadow: 0 -18px 50px -18px oklch(0 0 0 / 0.45);
+    padding: 8px 20px max(env(safe-area-inset-bottom), 22px);
     z-index: 1500;
     transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(.16,1,.3,1);
+    transition: transform 0.5s cubic-bezier(.2,.8,.25,1);
   }
   #result-sheet.show { transform: translateY(0); }
 
   .sheet-handle {
     width: 40px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 0 auto 16px;
+    height: 5px;
+    background: var(--paper-edge);
+    border-radius: 3px;
+    margin: 0 auto 14px;
   }
 
-  .result-banner {
+  .reveal-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     margin-bottom: 16px;
   }
-  .result-emoji {
-    font-size: 2.4rem;
-    line-height: 1;
-  }
-  .result-text { flex: 1; }
-  .result-headline {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.1rem;
-    line-height: 1.15;
-    color: var(--ink);
-  }
-  .result-sub {
-    font-size: 0.78rem;
-    color: var(--ink-mute);
-    margin-top: 2px;
-  }
-
-  .result-points {
-    background: var(--ink);
-    color: var(--cream);
-    border-radius: 14px;
-    padding: 16px;
-    text-align: center;
-    margin-bottom: 14px;
-  }
-  .result-points-big {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 2.8rem;
-    line-height: 1;
-    color: var(--usa-red);
-  }
-  .result-points-label {
-    font-size: 0.7rem;
-    color: var(--ink-mute);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-top: 4px;
-    font-weight: 600;
-  }
-
-  .result-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .stat {
-    background: var(--cream);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-    border: 1px solid var(--border);
-  }
-  .stat-val {
+  .reveal-left { min-width: 0; }
+  .reveal-reaction { display: flex; align-items: center; gap: 8px; }
+  .reveal-emoji { font-size: 1.5rem; }
+  .reveal-text { font-size: 1.625rem; white-space: nowrap; }
+  .reveal-dist {
     font-family: var(--mono);
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--ink);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .stat-label {
-    font-size: 0.65rem;
-    color: var(--ink-mute);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-top: 2px;
-    font-weight: 600;
+  .reveal-pts-block { text-align: right; flex-shrink: 0; }
+  .reveal-pts { font-size: 2.5rem; color: var(--ink); line-height: 1; }
+
+  .fact-card {
+    background: var(--paper);
+    border: 1px solid var(--paper-edge);
+    border-radius: var(--radius-sm);
+    padding: 13px 15px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
   }
+  .fact-icon { font-size: 1.5rem; line-height: 1.1; flex-shrink: 0; }
+  .fact-location { font-weight: 800; font-size: 1rem; color: var(--ink); margin-bottom: 4px; }
+  .fact-text { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.45; }
 
   /* ─── SPLASH ─── */
   /* ─── AUTH MODALS ─── */
@@ -1309,7 +1245,7 @@
   .guess-pin {
     width: 25px;
     height: 25px;
-    background: var(--usa-red);
+    background: var(--navy);
     border: 2.7px solid white;
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);
@@ -1497,7 +1433,13 @@
   <div id="topbar">
     <div class="brand">Geo<span>History</span></div>
     <div class="score-cluster">
-      <div class="pip-row" id="pip-row"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="pip-row" id="pip-row">
+        <i class="pip" id="pip-0"></i>
+        <i class="pip" id="pip-1"></i>
+        <i class="pip" id="pip-2"></i>
+        <i class="pip" id="pip-3"></i>
+        <i class="pip" id="pip-4"></i>
+      </div>
       <div class="score-chip" id="score-chip">0</div>
     </div>
   </div>
@@ -1508,13 +1450,11 @@
 
     <div id="clue-card">
       <div class="clue-header">
-        <div class="clue-meta">
-          <span class="q-tag" id="q-tag">Q1 / 5</span>
-          <span class="pts-tag" id="pts-tag">100 pts</span>
-        </div>
+        <span class="q-tag" id="q-tag">Q1 / 5</span>
+        <span class="pts-tag" id="pts-tag">100 pts</span>
+        <span class="clue-title" id="clue-title">Loading…</span>
         <button class="toggle-btn" onclick="toggleClue()">▼</button>
       </div>
-      <div class="clue-title" id="clue-title">Loading…</div>
       <div class="clue-body">
         <div class="clue-year" id="clue-year"></div>
         <div class="clue-text" id="clue-text"></div>
@@ -1587,28 +1527,27 @@
   <!-- RESULT SHEET -->
   <div id="result-sheet">
     <div class="sheet-handle"></div>
-    <div class="result-banner">
-      <div class="result-emoji" id="res-emoji">🎯</div>
-      <div class="result-text">
-        <div class="result-headline" id="res-headline">Nice try!</div>
-        <div class="result-sub" id="res-sub">The answer was…</div>
+    <div class="reveal-row">
+      <div class="reveal-left">
+        <div class="reveal-reaction">
+          <span class="reveal-emoji" id="res-emoji">🎯</span>
+          <span class="reveal-text display" id="res-headline">Bullseye!</span>
+        </div>
+        <div class="reveal-dist" id="res-dist">— mi away</div>
+      </div>
+      <div class="reveal-pts-block">
+        <div class="reveal-pts display" id="res-pts">+0</div>
+        <div class="eyebrow">points</div>
       </div>
     </div>
-    <div class="result-points">
-      <div class="result-points-big" id="res-pts">0</div>
-      <div class="result-points-label">Points earned</div>
-    </div>
-    <div class="result-stats">
-      <div class="stat">
-        <div class="stat-val" id="res-dist">— km</div>
-        <div class="stat-label">Off by</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val" id="res-total">0</div>
-        <div class="stat-label">Total Score</div>
+    <div class="fact-card">
+      <span class="fact-icon">📜</span>
+      <div>
+        <div class="fact-location" id="res-location">Loading…</div>
+        <div class="fact-text" id="res-fact"></div>
       </div>
     </div>
-    <button class="btn-secondary" id="next-btn" onclick="nextQuestion()">Next Question →</button>
+    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Next Question →</button>
   </div>
 
   <!-- END SCREEN -->
@@ -1991,12 +1930,9 @@ const supabaseClient = window.supabase.createClient(
 
 // Get the current "game day" using 3 AM EST as the boundary
 function getGameDate() {
-  // Convert current time to EST (UTC-5) and offset by 3 hours
-  const now = new Date();
-  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const estMs = utcMs - (5 * 60 * 60 * 1000); // EST = UTC-5
-  const adjusted = new Date(estMs - (3 * 60 * 60 * 1000)); // Shift back 3 hours
-  return adjusted.toISOString().split('T')[0];
+  // Game resets at 3 AM EST = 8 AM UTC. Subtracting 8h from UTC makes the
+  // date boundary land at the correct moment regardless of browser timezone.
+  return new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
 // Determine which question gets the daily double based on the game date
@@ -2435,8 +2371,8 @@ async function loadTodayTheme() {
       .from('daily_rounds')
       .select('theme')
       .eq('date', gameDate)
-      .single();
-    
+      .maybeSingle();
+
     if (round && round.theme) {
       const themeEl = document.getElementById('splash-theme');
       if (themeEl) themeEl.textContent = round.theme;
@@ -2564,6 +2500,28 @@ function scoreFor(distMiles, maxPts) {
   }
   
   return Math.round(maxPts * Math.max(pct, 0));
+}
+
+function qualityWord(tierName) {
+  if (tierName === 'Elite') return { t: 'Bullseye!',   c: 'var(--good)', e: '🎯' };
+  if (tierName === 'Great') return { t: 'So close!',   c: 'var(--good)', e: '🔥' };
+  if (tierName === 'Good')  return { t: 'Not bad',     c: 'var(--ok)',   e: '👍' };
+  if (tierName === 'Bad')   return { t: 'Way off',     c: 'var(--miss)', e: '😬' };
+  return                           { t: 'Lost at sea', c: 'var(--miss)', e: '🌊' };
+}
+
+function countUpPts(target, elId, duration) {
+  var el = $(elId);
+  if (!el) return;
+  var start = null;
+  function step(now) {
+    if (!start) start = now;
+    var p = Math.min(1, (now - start) / duration);
+    var eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = '+' + Math.round(target * eased);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
 function tierFor(distMiles) {
@@ -2712,8 +2670,10 @@ function initMap() {
         'line-join': 'round'
       },
       paint: {
-        'line-width': 3.5,
-        'line-color': '#dc2626' // default red, overridden per guess
+        'line-width': 3,
+        'line-color': '#ffffff',
+        'line-opacity': 0.95,
+        'line-dasharray': [2, 8]
       }
     });
     lineSourceAdded = true;
@@ -2740,8 +2700,8 @@ async function startGame() {
       .from('daily_rounds')
       .select('question_ids, theme, is_international')
       .eq('date', gameDate)
-      .single();
-    
+      .maybeSingle();
+
     if (error || !round) {
       console.error('No round found for today, using default');
     } else {
@@ -3045,13 +3005,9 @@ async function startPracticeGame(date) {
     dailyDoubleQuestion = -1; // never trigger DD in practice mode
     
     $('score-chip').textContent = '0';
-    const fill = $('progress-fill');
-    if (fill) {
-      fill.style.width = '0%';
-      fill.style.background = '#dc2626';
-    }
-    $('score-chip').style.background = '#dc2626';
-    
+    $('score-chip').style.background = '';
+    for (var i = 0; i < 5; i++) { var p = $('pip-' + i); if (p) p.className = 'pip'; }
+
     initMap();
     loadQuestion(0);
   } catch (e) {
@@ -3126,51 +3082,29 @@ function loadQuestion(idx) {
 }
 
 function updatePips() {
-  const fill = $('progress-fill');
-  const chip = $('score-chip');
-  if (!fill) return;
-  
-  const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
-  const answered = breakdown.length;
-  const possibleSoFar = MAX_POINTS.slice(0, answered).reduce((a, b) => a + b, 0);
-  
-  // Width: % of TOTAL possible
-  const widthPct = (totalScore / maxTotal) * 100;
-  fill.style.width = Math.min(widthPct, 100) + '%';
-  
-  // Color: based on how you've performed vs what you could have scored
-  let perfRatio = 0;
-  if (possibleSoFar > 0) {
-    perfRatio = totalScore / possibleSoFar;
+  var answered = breakdown.length;
+  for (var i = 0; i < 5; i++) {
+    var pip = $('pip-' + i);
+    if (!pip) continue;
+    pip.className = 'pip';
+    if (i < answered) {
+      var entry = breakdown[i];
+      if (entry.tierName === 'Elite' || entry.tierName === 'Great') pip.classList.add('good');
+      else if (entry.tierName === 'Good') pip.classList.add('ok');
+      else pip.classList.add('miss');
+    }
   }
-  
-  let color;
-  if (perfRatio >= 0.70) color = '#16a34a'; // green
-  else if (perfRatio >= 0.40) color = '#eab308'; // yellow
-  else color = '#dc2626'; // red
-  
-  // Track previous color to trigger pop animation when entering green
-  const prevColor = window._prevBarColor || '#dc2626';
-  
-  fill.style.background = color;
-  if (chip) chip.style.background = color;
-  
-  // Pop animation: trigger when latest answer was green-worthy (Elite or Great tier)
   if (answered > 0) {
-    const lastEntry = breakdown[breakdown.length - 1];
+    var lastEntry = breakdown[answered - 1];
     if (lastEntry && (lastEntry.tierName === 'Elite' || lastEntry.tierName === 'Great')) {
-      // Trigger pop on the cluster
-      const cluster = document.querySelector('.score-cluster');
+      var cluster = document.querySelector('.score-cluster');
       if (cluster) {
         cluster.classList.remove('pop-animate');
-        // Force reflow so animation restarts
         void cluster.offsetWidth;
         cluster.classList.add('pop-animate');
       }
     }
   }
-  
-  window._prevBarColor = color;
 }
 
 function toggleClue() {
@@ -3278,14 +3212,6 @@ function submitGuess() {
       answerLng += 360;
     }
     
-    // Set line color based on tier earned
-    let lineColor;
-    if (tier.name === 'Elite' || tier.name === 'Great') lineColor = '#16a34a'; // green
-    else if (tier.name === 'Good') lineColor = '#eab308'; // yellow
-    else lineColor = '#dc2626'; // red (Bad / Miss)
-    
-    map.setPaintProperty('connector-line', 'line-color', lineColor);
-    
     const startCoord = [guessLng, guessLngLat.lat];
     const endCoord = [answerLng, q.answer.lat];
     
@@ -3331,28 +3257,43 @@ function submitGuess() {
 
   $('score-chip').textContent = totalScore;
 
-  $('res-emoji').textContent = tier.emoji;
-  $('res-headline').textContent = tier.name;
-  
-  // Show daily double result if applicable
+  // Reaction row — mapped from tier name, not raw pts
+  var qw = qualityWord(tier.name);
+  $('res-emoji').textContent = qw.e;
+  $('res-headline').textContent = qw.t;
+  $('res-headline').style.color = qw.c;
+
+  // Distance subtext — include DD result if applicable
+  var distText = Math.round(distMiles).toLocaleString() + ' mi away';
   if (ddResult) {
-    if (ddResult.won) {
-      $('res-sub').textContent = `⚡ Daily Double WON! +${ddResult.change} bonus. Answer: ${q.location}`;
-    } else {
-      $('res-sub').textContent = `⚡ Daily Double LOST. -${Math.abs(ddResult.change)} pts. Answer: ${q.location}`;
-    }
-  } else {
-    $('res-sub').textContent = `The answer: ${q.location}`;
+    var ddTag = ddResult.won
+      ? '⚡ +' + ddResult.change + ' bonus'
+      : '⚡ −' + Math.abs(ddResult.change) + ' pts';
+    distText = ddTag + ' · ' + distText;
   }
-  
-  $('res-pts').textContent = pts;
-  $('res-pts').style.color = tier.color;
-  $('res-dist').textContent = `${Math.round(distMiles).toLocaleString()} mi`;
-  $('res-total').textContent = totalScore;
+  $('res-dist').textContent = distText;
 
-  $('next-btn').textContent = currentQ === 4 ? 'See Final Score →' : 'Next Question →';
+  // Fact card — location + country fallback chain (Item 11)
+  var locationStr = q.location || '';
+  var countryStr = q.country || q.region || '';
+  var locationEl = $('res-location');
+  if (locationEl) {
+    if (countryStr) {
+      locationEl.innerHTML = locationStr + ', <span style="color:var(--ink-soft);font-weight:600;">' + countryStr + '</span>';
+    } else {
+      locationEl.textContent = locationStr;
+    }
+  }
+  var factEl = $('res-fact');
+  if (factEl) factEl.textContent = q.fact || '';
 
-  setTimeout(() => { $('result-sheet').classList.add('show'); }, 600);
+  $('next-btn').textContent = currentQ === 4 ? 'See your results →' : 'Next question →';
+
+  // Show sheet first, then start count-up so animation is fully visible
+  setTimeout(() => {
+    $('result-sheet').classList.add('show');
+    countUpPts(pts, 'res-pts', 1500);
+  }, 600);
 
   updatePips();
 }
@@ -3481,16 +3422,9 @@ function resetGame() {
 
   $('end-screen').classList.remove('show');
   $('score-chip').textContent = '0';
-  
-  // Reset progress bar + chip
-  const fill = $('progress-fill');
-  const chip = $('score-chip');
-  if (fill) {
-    fill.style.width = '0%';
-    fill.style.background = '#dc2626';
-  }
-  if (chip) chip.style.background = '#dc2626';
-  window._prevBarColor = '#dc2626';
+  var chip = $('score-chip');
+  if (chip) chip.style.background = '';
+  for (var i = 0; i < 5; i++) { var p = $('pip-' + i); if (p) p.className = 'pip'; }
 
   loadQuestion(0);
 }
