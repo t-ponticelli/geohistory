@@ -1132,114 +1132,142 @@
   #end-screen {
     position: absolute;
     inset: 0;
-    background: var(--cream);
+    background: var(--paper);
     z-index: 2500;
     display: none;
     flex-direction: column;
-    padding: max(env(safe-area-inset-top), 24px) 20px max(env(safe-area-inset-bottom), 20px);
+    align-items: center;
+    padding: max(env(safe-area-inset-top), 46px) 18px max(env(safe-area-inset-bottom), 28px);
     overflow-y: auto;
   }
   #end-screen.show { display: flex; }
 
-  .end-top {
-    text-align: center;
-    margin-bottom: 20px;
+  .end-check-circle {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--good);
+    display: grid;
+    place-items: center;
+    animation: popIn .6s cubic-bezier(.2,.8,.25,1) both;
+    box-shadow: 0 0 0 10px oklch(0.63 0.15 150 / 0.14);
+    margin-bottom: 14px;
+    flex-shrink: 0;
   }
-  .end-emoji { font-size: 4rem; margin-bottom: 8px; }
-  .end-title {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 1.6rem;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-    margin-bottom: 4px;
-    font-style: italic;
-  }
-  .end-subtitle {
-    font-size: 0.85rem;
-    color: var(--ink-mute);
-  }
+  .end-check-circle span { font-size: 40px; color: #fff; }
 
-  .end-score-card {
-    background: var(--ink);
-    color: var(--cream);
-    border-radius: 20px;
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 18px;
+  .end-big-score {
+    font-size: 84px;
+    color: var(--on-slate);
+    line-height: 0.95;
+    margin: 2px 0 12px;
   }
-  .end-score-num {
-    font-family: var(--serif);
-    font-weight: 900;
-    font-size: 4.5rem;
-    line-height: 1;
-    transition: color 0.3s, text-shadow 0.3s;
-  }
-  .end-score-num.tier-red { color: #bf0a30; }
-  .end-score-num.tier-yellow { color: #eab308; }
-  .end-score-num.tier-green { color: #16a34a; }
-  .end-score-num.tier-platinum {
-    color: #e5e7eb;
-    background: linear-gradient(135deg, #c0c0c0 0%, #ffffff 25%, #e5e7eb 50%, #b8b8b8 75%, #d4d4d4 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    animation: platinumShine 3s ease-in-out infinite;
-  }
-  @keyframes platinumShine {
-    0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.2); }
-  }
-  .end-score-max {
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    color: var(--ink-mute);
-    margin-top: 6px;
-  }
-  .end-rank {
-    margin-top: 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .breakdown {
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 6px 14px;
+  .end-dots-row {
+    display: flex;
+    justify-content: center;
     margin-bottom: 16px;
   }
-  .breakdown-row {
+  .end-streak-section {
+    border-top: 1px solid oklch(1 0 0 / 0.1);
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .end-streak-num {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--brass);
+  }
+  .end-streak-label {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--on-slate-soft);
+    text-transform: uppercase;
+  }
+  .end-streak-bump {
+    margin: 14px 0;
+    text-align: center;
+    min-height: 24px;
+    width: 100%;
+  }
+  .end-friends-card {
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  .end-friends-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .end-friends-placeholder-body {
+    text-align: center;
+    padding: 18px 16px;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    font-style: italic;
+  }
+  .end-breakdown-card {
+    width: 100%;
+    padding: 6px 16px;
+    margin-bottom: 14px;
+  }
+  .end-breakdown-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.85rem;
-    border-radius: 8px;
-    margin: 0 -12px;
+    gap: 11px;
+    padding: 11px 0;
   }
-  .breakdown-row:last-child { border-bottom: none; }
-  
-  .breakdown-row.is-daily-double {
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
-    border: 1px solid #fbbf24;
-    border-bottom: 1px solid #fbbf24;
-    margin: 4px -12px;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  .end-breakdown-row + .end-breakdown-row {
+    border-top: 1px solid oklch(0.5 0.01 60 / 0.08);
   }
-  .br-dd-icon {
-    color: #f59e0b;
-    font-size: 0.9rem;
-    margin-left: 4px;
+  .end-bd-answer {
+    font-weight: 700;
+    font-size: 14.5px;
+    flex: 1;
   }
-  
-  .br-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-  .br-emoji { font-size: 1rem; flex-shrink: 0; }
-  .br-title { color: var(--ink); font-weight: 500; margin-bottom: 2px; }
-  .br-distance { display: block; font-size: 0.75rem; color: var(--ink-soft); }
-  .br-pts { font-family: var(--mono); font-size: 0.85rem; color: var(--ink); font-weight: 600; flex-shrink: 0; padding-left: 10px; }
+  .end-bd-dist {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .end-bd-pts {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    width: 42px;
+    text-align: right;
+    color: var(--ink);
+  }
+  .end-pastgames-card {
+    width: 100%;
+    text-align: left;
+    padding: 15px 16px;
+    border: 1.5px dashed var(--brass);
+    background: var(--paper-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: var(--font-ui);
+    color: var(--ink);
+  }
+  .end-pastgames-perfect {
+    width: 100%;
+    text-align: center;
+    padding: 14px 16px;
+    border: 1.5px solid var(--good);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+  }
 
   /* ─── Map markers ─── */
   .guess-pin {
@@ -1552,36 +1580,70 @@
 
   <!-- END SCREEN -->
   <div id="end-screen">
-    <div class="end-top">
-      <div class="end-success-row">
-        <div class="already-played-icon">✓</div>
-        <div class="streak-badge" id="end-streak-badge">
-          🔥<span class="streak-badge-number" id="end-streak-num">0</span>
-        </div>
-      </div>
-      <div class="end-subtitle">Here's how you did</div>
-    </div>
-    <div class="end-score-card">
-      <div class="end-score-num" id="final-score">0</div>
-      <div class="end-score-max" id="final-max" style="display:none;"></div>
-    </div>
-    <div class="breakdown" id="breakdown"></div>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      <div id="anon-signup-cta" style="display:none;">
-        <button onclick="openAuthModal()" style="width:100%;padding:14px;border-radius:16px;border:none;cursor:pointer;font-family:var(--font-ui);font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:white;box-shadow:0 4px 0 oklch(0.45 0.17 50);">💌 Keep your streak alive — sign up free</button>
-      </div>
-      <button class="btn-primary" id="end-share-btn" onclick="shareScore()">Share Score 📤</button>
-      <button class="btn-secondary" id="end-return-btn" onclick="returnToToday()" style="display:none;">↩️ Return to Today</button>
-      <div class="btn-split" id="end-split-btns"><button class="btn-split-half" id="end-leaderboard-btn" onclick="viewLeaderboard()">Leaderboard 🏆</button><div class="btn-split-divider"></div><button class="btn-split-half" id="end-stats-btn" onclick="viewStats()">Stats 📊</button></div>
-      <button class="btn-secondary" id="end-past-btn" onclick="openPastGames()">🕓 Play Past Games</button>
-      <div id="end-tomorrow-msg" style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px;">
-        Come back tomorrow for new questions!
+
+    <!-- Celebratory header -->
+    <div class="end-check-circle rise"><span>✓</span></div>
+    <div class="eyebrow rise" style="color: var(--ink-soft); margin-bottom: 4px;">Round complete</div>
+    <div class="display rise" id="end-theme-name" style="font-size: 30px; text-align: center; margin: 0 0 4px;"></div>
+    <div class="rise" style="font-size: 13.5px; color: var(--ink-soft); text-align: center; margin-bottom: 16px;">Nicely explored.</div>
+
+    <!-- Dark score card -->
+    <div class="card-dark rise" style="width: 100%; padding: 22px 20px; text-align: center; animation-delay: .05s; margin-bottom: 14px;">
+      <div class="eyebrow" style="color: var(--on-slate-soft);">Your score</div>
+      <div class="display end-big-score" id="final-score">0</div>
+      <div class="end-dots-row" id="end-dots"></div>
+      <div class="end-streak-section">
+        <div class="end-streak-num" id="end-streak-num">—</div>
+        <div class="end-streak-label">day streak 🔥</div>
       </div>
     </div>
+
+
+    <!-- Streak bump line (populated by JS) -->
+    <div class="end-streak-bump rise" id="end-streak-bump" style="animation-delay: .08s;"></div>
+
+    <!-- Groups coming soon placeholder -->
+    <div class="end-friends-card rise" style="animation-delay: .1s;">
+      <div class="end-friends-header">
+        <span class="eyebrow">Friends · today</span>
+        <span style="font-size: 11px; color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: .06em;">Groups coming soon</span>
+      </div>
+      <div class="card end-friends-placeholder-body">Groups leaderboard coming soon.</div>
+    </div>
+
+    <!-- Per-question breakdown (populated by JS) -->
+    <div class="card end-breakdown-card rise" id="end-breakdown" style="animation-delay: .13s;"></div>
+
+    <!-- Anon sign-up CTA (shown for guests on real games) -->
+    <div id="anon-signup-cta" style="display:none; width: 100%; margin-bottom: 10px;">
+      <button onclick="openAuthModal()" style="width:100%;padding:14px;border-radius:16px;border:none;cursor:pointer;font-family:var(--font-ui);font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:white;box-shadow:0 4px 0 oklch(0.45 0.17 50);">💌 Keep your streak alive — sign up free</button>
+    </div>
+
+    <!-- Share button (hidden in practice mode) -->
+    <button class="btn btn-crimson rise" id="end-share-btn" onclick="shareScore()" style="animation-delay: .17s; margin-bottom: 10px; width: 100%;">Share your result 📤</button>
+
+    <!-- Return to Today (practice mode only, hidden by default) -->
+    <button class="btn rise" id="end-return-btn" onclick="returnToToday()" style="display:none; animation-delay: .17s; margin-bottom: 10px; width: 100%;">↩️ Return to Today</button>
+
+    <!-- Past games / catch-up card (populated by JS) -->
+    <div id="end-pastgames-wrap" style="width: 100%;"></div>
+
+    <!-- Leaderboard / Stats split -->
+    <div class="btn-split rise" id="end-split-btns" style="animation-delay: .2s; width: 100%; margin-bottom: 10px;">
+      <button class="btn-split-half" id="end-leaderboard-btn" onclick="viewLeaderboard()">Leaderboard 🏆</button>
+      <div class="btn-split-divider"></div>
+      <button class="btn-split-half" id="end-stats-btn" onclick="viewStats()">Stats 📊</button>
+    </div>
+
+    <!-- Back home -->
+    <button class="btn rise" onclick="returnToToday()" style="animation-delay: .24s; background: transparent; color: var(--ink-soft); box-shadow: none; font-weight: 600; width: 100%; margin-bottom: 8px;">Back home</button>
+
+    <!-- Next round countdown (hidden in practice mode) -->
+    <div id="end-tomorrow-msg" style="text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin-top: 4px;">
+      Come back tomorrow for new questions!
+    </div>
+
   </div>
-
-</div>
-
 <!-- ═══════════════════════════════════════════════════════
      REACT HOME COMPONENT
      Uses React.createElement (no build step, no Babel).
@@ -2157,6 +2219,9 @@ async function showHome(scoreData) {
     loadWeekStripData(scoreData),
   ]);
 
+  window.prePlayStreak = streak;
+  window.lastWeekDays = weekDays;
+  window.currentGameTheme = todayTheme.name || '';
   _homeReactRoot.render(
     React.createElement(window.GeoHistoryHome, {
       initData: { todayScore: scoreData, username: window.currentUsername },
@@ -3314,87 +3379,140 @@ function nextQuestion() {
 }
 
 function showEndScreen() {
-  const maxTotal = MAX_POINTS.reduce((a, b) => a + b, 0);
-  const pct = totalScore / maxTotal;
-  $('final-score').textContent = totalScore;
-  
-  // Apply color tier based on absolute score
-  const scoreEl = $('final-score');
-  scoreEl.classList.remove('tier-red', 'tier-yellow', 'tier-green', 'tier-platinum');
-  if (totalScore >= 1000) {
-    scoreEl.classList.add('tier-platinum');
-  } else if (totalScore >= 701) {
-    scoreEl.classList.add('tier-green');
-  } else if (totalScore >= 401) {
-    scoreEl.classList.add('tier-yellow');
-  } else {
-    scoreEl.classList.add('tier-red');
-  }
-
-  const br = $('breakdown');
-  br.innerHTML = breakdown.map((r, i) => {
-    const isDD = r.dailyDouble !== null && r.dailyDouble !== undefined;
-    const ddIcon = isDD ? '<span class="br-dd-icon">⚡</span>' : '';
-    return `
-    <div class="breakdown-row ${isDD ? 'is-daily-double' : ''}">
-      <div class="br-left">
-        <span class="br-emoji">${r.emoji}</span>
-        <div>
-          <span class="br-title">${r.title} ${ddIcon}</span>
-          <span class="br-distance">${r.distMiles} mi off</span>
-        </div>
-      </div>
-      <span class="br-pts">${r.pts}</span>
-    </div>
-    `;
-  }).join('');
-
   $('end-screen').classList.add('show');
-  
-  // Hide streak badge by default (it'll show via maybeShowStreakBadge if applicable)
-  const endBadge = document.getElementById('end-streak-badge');
-  if (endBadge) endBadge.classList.remove('show');
-  
-  // Adjust buttons + footer based on whether this was a real or practice game
-  const pastBtn = document.getElementById('end-past-btn');
-  const tomorrowMsg = document.getElementById('end-tomorrow-msg');
-  const shareBtn = document.getElementById('end-share-btn');
-  const returnBtn = document.getElementById('end-return-btn');
-  const splitBtns = document.getElementById('end-split-btns');
 
-  // Show sign-up CTA for guest users on real (non-practice) games
-  const anonCta = document.getElementById('anon-signup-cta');
-  if (anonCta) {
-    anonCta.style.display = (!practiceMode && window.isGuest) ? 'block' : 'none';
+  var themeEl = document.getElementById('end-theme-name');
+  if (themeEl) themeEl.textContent = window.currentGameTheme || '';
+
+  var scoreEl = document.getElementById('final-score');
+  if (scoreEl) {
+    var target = totalScore;
+    var dur = 1100;
+    var t0 = Date.now();
+    function tick() {
+      var p = Math.min((Date.now() - t0) / dur, 1);
+      var e = 1 - Math.pow(1 - p, 3);
+      scoreEl.textContent = Math.round(target * e);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
   }
+
+  var dotClass = function(r) {
+    if (r.dailyDouble) return r.dailyDouble.won ? 'good' : 'miss';
+    if (r.tierName === 'Elite' || r.tierName === 'Great') return 'good';
+    if (r.tierName === 'Good') return 'ok';
+    return 'miss';
+  };
+
+  var dotsEl = document.getElementById('end-dots');
+  if (dotsEl) {
+    dotsEl.innerHTML = '<span class="dots">' +
+      breakdown.map(function(r, i) {
+        var dc = dotClass(r);
+        var del = (0.4 + i * 0.12).toFixed(2);
+        return '<i class="dot ' + dc + '" style="width:22px;height:22px;' +
+          'animation:popIn .4s both;animation-delay:' + del + 's"></i>';
+      }).join('') + '</span>';
+  }
+
+  var bkEl = document.getElementById('end-breakdown');
+  if (bkEl) {
+    bkEl.innerHTML = breakdown.map(function(r, i) {
+      var dc = dotClass(r);
+      var ddBadge = r.dailyDouble ? ' ⚡' : '';
+      var border = i === 0 ? '' : 'border-top:1px solid oklch(0.5 0.01 60/0.08);';
+      return '<div class="end-breakdown-row" style="' + border + '">' +
+        '<i class="dot ' + dc + '" style="width:13px;height:13px;flex-shrink:0"></i>' +
+        '<span class="end-bd-answer">' + r.title + ddBadge + '</span>' +
+        '<span class="end-bd-dist">' + r.distMiles + ' mi</span>' +
+        '<span class="end-bd-pts">+' + r.pts + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  var anonCta = document.getElementById('anon-signup-cta');
+  if (anonCta) anonCta.style.display = (!practiceMode && window.isGuest) ? 'block' : 'none';
+
+  var shareBtn = document.getElementById('end-share-btn');
+  var returnBtn = document.getElementById('end-return-btn');
+  var splitBtns = document.getElementById('end-split-btns');
+  var tomorrowMsg = document.getElementById('end-tomorrow-msg');
+  var pastWrap = document.getElementById('end-pastgames-wrap');
+
   if (practiceMode) {
-    // Hide Share, show Return to Today in its place
     if (shareBtn) shareBtn.style.display = 'none';
     if (returnBtn) returnBtn.style.display = '';
-    // Leaderboard / Stats remain visible but disabled (greyed)
     if (splitBtns) splitBtns.classList.add('is-disabled');
-    // Past Games button keeps the same label
-    if (pastBtn) pastBtn.textContent = '🕓 Play Past Games';
-    // Hide tomorrow message (misleading in practice)
     if (tomorrowMsg) tomorrowMsg.style.display = 'none';
+    if (pastWrap) pastWrap.innerHTML = '';
   } else {
-    // Real game: Share visible, Return hidden, split enabled
     if (shareBtn) shareBtn.style.display = '';
     if (returnBtn) returnBtn.style.display = 'none';
     if (splitBtns) splitBtns.classList.remove('is-disabled');
-    if (pastBtn) pastBtn.textContent = '🕓 Play Past Games';
     if (tomorrowMsg) tomorrowMsg.style.display = '';
+    if (pastWrap) {
+      var days = window.lastWeekDays || [];
+      var missed = days.filter(function(d) { return d.state === 'missed'; });
+      var avail = days.filter(function(d) { return d.state !== 'locked'; }).length;
+      var played = avail - missed.length;
+      if (missed.length) {
+        var nd = missed[0];
+        pastWrap.innerHTML =
+          '<button class="end-pastgames-card rise" style="animation-delay:.24s"' +
+          ' onclick="window.hideHomeRoot&&window.hideHomeRoot()' +
+          ';startPracticeGame(\'' + nd.date + '\')">' +
+          '<span style="font-size:26px">🗺️</span>' +
+          '<div style="flex:1">' +
+          '<div style="font-weight:800;font-size:15.5px">One more — finish your week</div>' +
+          '<div style="font-size:13px;color:var(--ink-soft)">' +
+          played + '/' + avail + ' days done · ' +
+          nd.label + '\'s round is still open</div></div>' +
+          '<span style="font-weight:800;font-size:14px;color:var(--brass-deep);white-space:nowrap">' +
+          'Play ' + nd.label + ' →</span></button>';
+      } else if (avail > 0) {
+        pastWrap.innerHTML =
+          '<div class="end-pastgames-perfect rise" style="animation-delay:.24s">' +
+          '<span style="font-weight:800;font-size:15px;color:var(--good)">' +
+          '🏆 Perfect week — all ' + avail + ' days played!</span></div>';
+      } else {
+        pastWrap.innerHTML =
+          '<button class="end-pastgames-card rise"' +
+          ' style="animation-delay:.24s;justify-content:center"' +
+          ' onclick="openPastGames()">' +
+          '<span style="font-size:18px">🕒</span>' +
+          '<span style="font-weight:700">Play Past Games</span></button>';
+      }
+    }
   }
-  
-  // Only show streak on real (non-practice) plays — since saving happens
+
   if (!practiceMode) {
-    // Give save a moment to write, then calculate streak fresh
-    setTimeout(() => {
-      maybeShowStreakBadge('end-streak-badge', 'end-streak-num');
+    setTimeout(async function() {
+      var streak = await calculateStreak();
+      var numEl = document.getElementById('end-streak-num');
+      var bumpEl = document.getElementById('end-streak-bump');
+      if (numEl) {
+        var prePlay = (typeof window.prePlayStreak === 'number')
+          ? window.prePlayStreak : streak - 1;
+        numEl.textContent = prePlay >= 1 ? prePlay : streak;
+      }
+      if (bumpEl) {
+        bumpEl.innerHTML =
+          '<span style="font-size:14px;color:var(--ink-faint)">Tallying your streak…</span>';
+      }
+      setTimeout(function() {
+        if (numEl) numEl.textContent = streak;
+        if (bumpEl && shouldShowStreak(streak)) {
+          bumpEl.innerHTML =
+            '<span style="font-weight:800;font-size:16px;color:var(--brass-deep)">' +
+            '🔥 Streak extended to ' + streak + ' days!</span>';
+        } else if (bumpEl) {
+          bumpEl.innerHTML = '';
+        }
+      }, 1200);
     }, 700);
   }
-  
-  // Save score to database (no-op in practice mode)
+
   saveScore(totalScore);
 }
 
