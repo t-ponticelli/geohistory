@@ -12,6 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <link rel="stylesheet" href="/styles.css" />
 <style>
   :root {
@@ -1329,6 +1331,130 @@
   .maplibregl-ctrl-bottom-right {
     margin-bottom: 8px !important;
   }
+
+  /* ─── SHARE MODAL ─── */
+  #share-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    background: rgba(20,17,12,0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    animation: fadeIn .25s both;
+    display: none;
+  }
+  #share-overlay.show { display: flex; }
+  #share-sheet {
+    background: var(--paper);
+    border-radius: 26px 26px 0 0;
+    padding: 10px 18px max(env(safe-area-inset-bottom), 24px);
+    animation: sheetUp .42s cubic-bezier(.2,.8,.25,1) both;
+    max-height: 94vh;
+    overflow-y: auto;
+  }
+  @keyframes sheetUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .share-handle {
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--ink-faint);
+    margin: 0 auto 14px;
+  }
+  .share-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .share-close-btn {
+    border: none;
+    background: var(--paper-2);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .share-canvas-wrap {
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 8px;
+  }
+  #share-canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .share-caption {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin: 6px 0 16px;
+  }
+  .share-btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .share-btn-grid.native-available {
+    grid-template-columns: 1fr;
+    margin-bottom: 10px;
+  }
+  .share-btn-native {
+    grid-column: 1 / -1;
+  }
+  .btn-share-secondary {
+    background: var(--paper-2);
+    color: var(--ink);
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-share-ghost {
+    width: 100%;
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--ink-faint);
+    border-radius: var(--radius);
+    padding: 13px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .share-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 80px;
+    transform: translateX(-50%);
+    background: var(--slate);
+    color: var(--on-slate);
+    padding: 11px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: var(--shadow-pop);
+    z-index: 10;
+    white-space: nowrap;
+    animation: fadeIn .2s both;
+  }
 </style>
 </head>
 <body>
@@ -1546,6 +1672,26 @@
         <div style="text-align:center; padding: 20px; color: #666;">Loading...</div>
       </div>
       <button class="past-close-btn" onclick="closePastGames()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- SHARE MODAL -->
+  <div id="share-overlay" onclick="closeShareModal()">
+    <div id="share-sheet" onclick="event.stopPropagation()">
+      <div class="share-handle"></div>
+      <div class="share-header">
+        <span class="display" style="font-size: 24px;">Share your result</span>
+        <button class="share-close-btn" onclick="closeShareModal()">✕</button>
+      </div>
+      <div class="share-canvas-wrap">
+        <canvas id="share-canvas"></canvas>
+      </div>
+      <p class="share-caption">No spoilers — just your dots and score.</p>
+      <div id="share-btn-grid" class="share-btn-grid">
+        <button class="btn-share-secondary" id="share-copy-img-btn" onclick="shareCopyImage()">Copy image</button>
+        <button class="btn-share-secondary" id="share-download-btn" onclick="shareDownload()">Download</button>
+      </div>
+      <button class="btn-share-ghost" onclick="shareCopyText()">Copy as text 🟢🟡🔴</button>
     </div>
   </div>
 
@@ -2383,50 +2529,6 @@ function updateCountdown() {
   }
 }
 
-// Share yesterday's score (from already-played screen)
-function shareYesterday() {
-  if (!window.yesterdayScore) return;
-  
-  const score = window.yesterdayScore.total_score;
-  const details = window.yesterdayScore.question_details || [];
-  
-  const today = new Date();
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const day = today.getDate();
-  const suffix = (d) => {
-    if (d >= 11 && d <= 13) return 'th';
-    switch (d % 10) { case 1: return 'st'; case 2: return 'nd'; case 3: return 'rd'; default: return 'th'; }
-  };
-  const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
-  
-  const circles = details.map(q => {
-    if (q.dailyDouble) {
-      return q.dailyDouble.won ? '⚡' : '⚫';
-    }
-    if (q.tierName) {
-      if (q.tierName === 'Elite') return '🎯';
-      if (q.tierName === 'Great') return '🟢';
-      if (q.tierName === 'Good') return '🟡';
-      return '🔴';
-    }
-    if (q.distMiles <= 30) return '🎯';
-    if (q.distMiles <= 250) return '🟢';
-    if (q.distMiles <= 900) return '🟡';
-    return '🔴';
-  }).join('');
-  
-  const shareText = `GeoHistory / ${dateStr}\n${score} pts\n${circles}\nplaygeohistory.netlify.app`;
-  
-  if (navigator.share) {
-    navigator.share({
-      title: 'GeoHistory',
-      text: shareText,
-      url: 'https://playgeohistory.netlify.app'
-    }).catch(() => copyToClipboard(shareText));
-  } else {
-    copyToClipboard(shareText);
-  }
-}
 
 // Load today's theme on splash
 async function loadTodayTheme() {
@@ -3647,119 +3749,258 @@ async function saveScore(finalScore) {
 }
 
 // Share score on Twitter
-function shareScore() {
-  const score = parseInt($('final-score').textContent);
-  const maxScore = MAX_POINTS.reduce((a, b) => a + b, 0);
-  
-  // Format date as "May 21st"
-  const today = new Date();
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const day = today.getDate();
-  const suffix = (d) => {
-    if (d >= 11 && d <= 13) return 'th';
-    switch (d % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
-    }
-  };
-  const dateStr = `${months[today.getMonth()]} ${day}${suffix(day)}`;
-  
-  // Build emoji circles based on each question's performance
-  // 🎯 Elite, 🟢 Great, 🟡 Good, 🔴 Bad/Miss
-  // ⚡ Daily Double WON, ⚫ Daily Double LOST
-  const circles = breakdown.map((b, i) => {
-    if (b.dailyDouble) {
-      return b.dailyDouble.won ? '⚡' : '⚫';
-    }
-    if (b.tierName) {
-      if (b.tierName === 'Elite') return '🎯';
-      if (b.tierName === 'Great') return '🟢';
-      if (b.tierName === 'Good') return '🟡';
-      return '🔴';
-    }
-    if (b.distMiles <= 30) return '🎯';
-    if (b.distMiles <= 250) return '🟢';
-    if (b.distMiles <= 900) return '🟡';
-    return '🔴';
-  }).join('');
-  
-  // Build share text - single line URL so it stays in one message
-  const shareText = `GeoHistory / ${dateStr}
-${score} pts
-${circles}
-playgeohistory.netlify.app`;
+// ═══ SHARE MODAL — Globe card ═══
 
-  // Try native share first (mobile), then fall back to clipboard
-  if (navigator.share) {
-    navigator.share({
-      title: 'GeoHistory',
-      text: shareText,
-      url: 'https://playgeohistory.netlify.app'
-    }).catch(() => copyToClipboard(shareText));
-  } else {
-    copyToClipboard(shareText);
-  }
-}
+var _shareLandCache = null;
 
-function copyToClipboard(text) {
-  // Try modern clipboard API
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      showShareToast('Copied to clipboard! 📋');
-    }).catch(() => {
-      fallbackCopy(text);
-    });
-  } else {
-    fallbackCopy(text);
-  }
-}
-
-function fallbackCopy(text) {
-  // Fallback method using textarea
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  document.body.appendChild(textarea);
-  textarea.select();
+async function getShareLand() {
+  if (_shareLandCache) return _shareLandCache;
+  if (!(window.d3 && window.topojson)) return null;
   try {
-    document.execCommand('copy');
-    showShareToast('Copied to clipboard! 📋');
-  } catch (e) {
-    showShareToast('Copy failed — try manually');
-  }
-  document.body.removeChild(textarea);
+    var url = 'https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json';
+    var r = await fetch(url);
+    var t = await r.json();
+    _shareLandCache = topojson.feature(t, t.objects.land);
+    return _shareLandCache;
+  } catch (e) { return null; }
 }
 
-function showShareToast(message) {
-  let toast = document.getElementById('share-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'share-toast';
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1a1a1a;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 100px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      z-index: 9999;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      opacity: 0;
-      transition: opacity 0.3s;
-    `;
-    document.body.appendChild(toast);
-  }
-  toast.textContent = message;
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+function getShareDots(items) {
+  return items.map(function(r) {
+    if (r.dailyDouble) return r.dailyDouble.won ? 'good' : 'miss';
+    if (r.tierName === 'Elite' || r.tierName === 'Great') return 'good';
+    if (r.tierName === 'Good') return 'ok';
+    if (r.distMiles !== undefined) {
+      if (r.distMiles <= 75) return 'good';
+      if (r.distMiles <= 200) return 'ok';
+    }
+    return 'miss';
+  });
 }
+
+var DOT_HEX = { good: '#3fb56e', ok: '#e3b23c', miss: '#d6453f' };
+
+async function drawShareCard(canvas, score, dots) {
+  var W = 1080, H = 1350;
+  canvas.width = W; canvas.height = H;
+  var ctx = canvas.getContext('2d');
+
+  try {
+    await Promise.all([
+      document.fonts.load('italic 700 60px Newsreader'),
+      document.fonts.load('600 220px Newsreader'),
+      document.fonts.load('italic 600 48px Newsreader'),
+      document.fonts.load("700 28px 'Space Mono'"),
+      document.fonts.ready,
+    ]);
+  } catch (e) {}
+
+  var land = null;
+  try { land = await getShareLand(); } catch (e) {}
+
+  var cream = '#eef5f0', eyebrowClr = '#8fc0e6', green = '#37cf90';
+
+  var g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#071a33');
+  g.addColorStop(0.6, '#0a2c4f');
+  g.addColorStop(1, '#0d3a5c');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  var gx = W / 2, gy = 1560, Rg = 820;
+  var og = ctx.createRadialGradient(gx - 200, gy - Rg + 120, 60, gx, gy, Rg);
+  og.addColorStop(0, '#1b6ea0');
+  og.addColorStop(0.7, '#0f4f7e');
+  og.addColorStop(1, '#0a3358');
+  ctx.save();
+  ctx.beginPath(); ctx.arc(gx, gy, Rg, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = og; ctx.fillRect(0, 0, W, H);
+  if (land && window.d3) {
+    var proj = d3.geoOrthographic()
+      .scale(Rg).translate([gx, gy]).rotate([-15, -18]).clipAngle(90);
+    var gpath = d3.geoPath(proj, ctx);
+    ctx.beginPath(); gpath(d3.geoGraticule10());
+    ctx.strokeStyle = 'rgba(180,220,255,0.12)';
+    ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.beginPath(); gpath(land);
+    ctx.fillStyle = '#2eae6e'; ctx.fill();
+    ctx.strokeStyle = 'rgba(8,40,30,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(gx, gy, Rg, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(150,215,255,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+
+  ctx.font = 'italic 700 62px Newsreader';
+  var geoW = ctx.measureText('Geo').width;
+  var histW = ctx.measureText('History').width;
+  var sx = W / 2 - (geoW + histW) / 2;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = cream; ctx.fillText('Geo', sx, 178);
+  ctx.fillStyle = green; ctx.fillText('History', sx + geoW, 178);
+  ctx.textAlign = 'center';
+
+  var dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric'
+  }).toUpperCase();
+  ctx.font = "700 25px 'Space Mono'";
+  ctx.fillStyle = eyebrowClr;
+  ctx.letterSpacing = '6px';
+  ctx.fillText(dateStr, W / 2, 234);
+  ctx.letterSpacing = '0px';
+
+  var dotR = 36, dGap = 30;
+  var totalW = dots.length * dotR * 2 + (dots.length - 1) * dGap;
+  var dx = W / 2 - totalW / 2 + dotR;
+  dots.forEach(function(d) {
+    ctx.beginPath(); ctx.arc(dx, 360, dotR, 0, Math.PI * 2);
+    ctx.fillStyle = DOT_HEX[d] || DOT_HEX.miss; ctx.fill();
+    var hlx = dx - dotR * 0.3, hly = 360 - dotR * 0.4;
+    var hl = ctx.createRadialGradient(hlx, hly, 1, dx, 360, dotR);
+    hl.addColorStop(0, 'rgba(255,255,255,0.4)');
+    hl.addColorStop(0.5, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hl; ctx.fill();
+    dx += dotR * 2 + dGap;
+  });
+
+  ctx.font = '600 220px Newsreader';
+  ctx.fillStyle = cream;
+  ctx.fillText(String(score), W / 2, 600);
+
+  ctx.font = "700 26px 'Space Mono'";
+  ctx.fillStyle = eyebrowClr;
+  ctx.letterSpacing = '10px';
+  ctx.fillText('POINTS', W / 2, 650);
+  ctx.letterSpacing = '0px';
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,30,20,0.55)';
+  ctx.shadowBlur = 18; ctx.shadowOffsetY = 1;
+  ctx.font = 'italic 600 48px Newsreader';
+  ctx.fillStyle = cream;
+  ctx.fillText('Can you beat me?', W / 2, 1232);
+  ctx.font = "700 28px 'Space Mono'";
+  ctx.fillStyle = '#bdf0d6';
+  ctx.fillText('playgeohistory.netlify.app', W / 2, 1290);
+  ctx.restore();
+}
+
+function buildShareCardText(score, dots) {
+  var emoji = dots.map(function(d) {
+    return d === 'good' ? '🟢' : d === 'ok' ? '🟡' : '🔴';
+  }).join('');
+  var date = new Date().toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric'
+  });
+  return 'GeoHistory — ' + date + '\n' + emoji +
+    '  ' + score + ' pts\nCan you beat me? playgeohistory.netlify.app';
+}
+
+var _shareScore = 0;
+var _shareDots = [];
+
+function openShareModal(score, dots) {
+  _shareScore = score;
+  _shareDots = dots;
+  var overlay = document.getElementById('share-overlay');
+  var canvas = document.getElementById('share-canvas');
+  var grid = document.getElementById('share-btn-grid');
+  overlay.classList.add('show');
+  drawShareCard(canvas, score, dots);
+  var testFile = null;
+  try {
+    testFile = new File([new Blob()], 'x.png', { type: 'image/png' });
+  } catch (e) {}
+  var copyBtn = '<button class="btn-share-secondary"' +
+    ' onclick="shareCopyImage()">Copy image</button>';
+  var dlBtn = '<button class="btn-share-secondary"' +
+    ' onclick="shareDownload()">Download</button>';
+  if (testFile && navigator.canShare &&
+      navigator.canShare({ files: [testFile] })) {
+    var natBtn = '<button class="btn btn-crimson share-btn-native"' +
+      ' onclick="shareNative()">📤 Share image</button>';
+    grid.className = 'share-btn-grid native-available';
+    grid.innerHTML = natBtn + copyBtn + dlBtn;
+  } else {
+    grid.className = 'share-btn-grid';
+    grid.innerHTML = copyBtn + dlBtn;
+  }
+}
+
+function closeShareModal() {
+  document.getElementById('share-overlay').classList.remove('show');
+}
+
+function showModalToast(msg) {
+  var existing = document.getElementById('share-modal-toast');
+  if (existing) existing.remove();
+  var t = document.createElement('div');
+  t.id = 'share-modal-toast';
+  t.className = 'share-toast';
+  t.textContent = msg;
+  document.getElementById('share-sheet').appendChild(t);
+  setTimeout(function() { if (t.parentNode) t.remove(); }, 1900);
+}
+
+async function shareCopyImage() {
+  var canvas = document.getElementById('share-canvas');
+  try {
+    var blob = await new Promise(function(res) {
+      canvas.toBlob(res, 'image/png');
+    });
+    await navigator.clipboard.write(
+      [new ClipboardItem({ 'image/png': blob })]
+    );
+    showModalToast('Image copied — paste it anywhere ✓');
+  } catch (e) {
+    showModalToast('Copy not supported — try Download');
+  }
+}
+
+async function shareDownload() {
+  var canvas = document.getElementById('share-canvas');
+  var blob = await new Promise(function(res) {
+    canvas.toBlob(res, 'image/png');
+  });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'geohistory-' +
+    new Date().toISOString().slice(0, 10) + '.png';
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  showModalToast('Saved ✓');
+}
+
+async function shareNative() {
+  var canvas = document.getElementById('share-canvas');
+  try {
+    var blob = await new Promise(function(res) {
+      canvas.toBlob(res, 'image/png');
+    });
+    var file = new File([blob], 'geohistory.png', { type: 'image/png' });
+    var txt = buildShareCardText(_shareScore, _shareDots);
+    await navigator.share({ files: [file], text: txt });
+  } catch (e) { /* user cancelled */ }
+}
+
+async function shareCopyText() {
+  var txt = buildShareCardText(_shareScore, _shareDots);
+  try {
+    await navigator.clipboard.writeText(txt);
+    showModalToast('Text copied ✓');
+  } catch (e) { copyToClipboard(txt); }
+}
+
+function shareScore() {
+  openShareModal(totalScore, getShareDots(breakdown));
+}
+
+function shareYesterday() {
+  if (!window.yesterdayScore) return;
+  var details = window.yesterdayScore.question_details || [];
+  openShareModal(window.yesterdayScore.total_score, getShareDots(details));
+}
+
 
 // Go to leaderboard
 function viewLeaderboard() {
