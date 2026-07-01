@@ -876,6 +876,16 @@
     margin-bottom: 4px;
   }
   .auth-input:focus { outline: none; border-color: var(--navy); }
+  #auth-name-wrap {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 250ms ease, opacity 250ms ease;
+  }
+  #auth-name-wrap.reveal {
+    max-height: 130px;
+    opacity: 1;
+  }
   .auth-hint {
     font-size: 0.78rem;
     color: var(--ink-faint);
@@ -905,6 +915,54 @@
     min-height: 1.2em;
     font-weight: 600;
   }
+  /* ── Guest reminder banner ── */
+  @keyframes bannerOut {
+    to { transform: translateY(120%); opacity: 0; }
+  }
+  #guest-banner {
+    display: none;
+    position: fixed;
+    bottom: max(env(safe-area-inset-bottom), 16px);
+    left: 16px;
+    right: 16px;
+    max-width: 380px;
+    margin: 0 auto;
+    background: var(--slate);
+    color: var(--on-slate);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-pop);
+    padding: 13px 14px;
+    align-items: center;
+    gap: 10px;
+    z-index: 4800;
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  #guest-banner.visible {
+    display: flex;
+    animation: sheetUp .42s cubic-bezier(.2,.8,.25,1) both;
+  }
+  #guest-banner.out {
+    animation: bannerOut .3s ease forwards;
+  }
+  #guest-banner-text {
+    flex: 1;
+    cursor: pointer;
+    line-height: 1.3;
+  }
+  #guest-banner-dismiss {
+    background: none;
+    border: none;
+    color: var(--on-slate);
+    opacity: 0.6;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 2px 4px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  #guest-banner-dismiss:hover { opacity: 1; }
   .btn-link-skip {
     background: none; border: none;
     color: var(--ink-soft);
@@ -1543,13 +1601,15 @@
       <div class="auth-icon">🌍</div>
       <h2 class="auth-title">Keep your streak alive</h2>
       <p class="auth-subtitle">Sign up with your email to save your scores and join groups.</p>
-      <label class="auth-label">Display Name</label>
-      <input type="text" id="auth-name-input" class="auth-input" placeholder="e.g., Trevor" maxlength="20" autocomplete="off" />
-      <div class="auth-hint">3–20 characters. This is what other players see on the leaderboard.</div>
       <label class="auth-label">Email</label>
       <input type="email" id="auth-email-input" class="auth-input" placeholder="you@example.com" maxlength="100" autocomplete="email" />
       <div class="auth-hint">For sign-in only. Never shown publicly.</div>
-      <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()" style="width:100%;margin-top:16px;">Send Magic Link</button>
+      <div id="auth-name-wrap">
+        <label class="auth-label" style="margin-top:14px;">Display Name</label>
+        <input type="text" id="auth-name-input" class="auth-input" placeholder="e.g., Trevor" maxlength="20" autocomplete="off" />
+        <div class="auth-hint">3–20 characters. This is what other players see on the leaderboard.</div>
+      </div>
+      <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()" style="width:100%;margin-top:16px;">Continue</button>
       <button class="btn-link-skip" id="auth-skip-btn" onclick="closeAuthModal()">Or play as a guest</button>
       <div id="auth-error" class="auth-error"></div>
     </div>
@@ -1559,7 +1619,7 @@
   <div id="auth-sent-modal" class="auth-modal">
     <div class="auth-content">
       <div class="auth-icon">📧</div>
-      <h2 class="auth-title">Check your email</h2>
+      <h2 class="auth-title" id="auth-sent-title">Check your email</h2>
       <p class="auth-subtitle">We sent a magic link to <strong id="auth-sent-email">your email</strong>. Click it to sign in.</p>
       <p class="auth-hint-small">If you don't see it, check spam.</p>
       <button class="btn btn-ghost" onclick="closeAuthSentModal()">Got it</button>
@@ -2232,8 +2292,22 @@ function validateEmail(email) {
 }
 
 // ─── AUTH MODAL CONTROLS ────────────────────────────────────────────────
+var _authStep = 'email'; // 'email' | 'name'
+var _pendingEmail = '';
+
 function openAuthModal(allowClose) {
   if (allowClose === undefined) allowClose = true;
+  // Reset to step 1
+  _authStep = 'email';
+  _pendingEmail = '';
+  var nameWrap = document.getElementById('auth-name-wrap');
+  if (nameWrap) nameWrap.classList.remove('reveal');
+  var nameInput = document.getElementById('auth-name-input');
+  if (nameInput) nameInput.value = '';
+  var emailInput = document.getElementById('auth-email-input');
+  if (emailInput) emailInput.value = '';
+  var submitBtn = document.getElementById('auth-submit');
+  if (submitBtn) { submitBtn.textContent = 'Continue'; submitBtn.disabled = false; }
   document.getElementById('auth-error').textContent = '';
   var closeBtn = document.getElementById('auth-close-btn');
   var skipBtn = document.getElementById('auth-skip-btn');
@@ -2246,8 +2320,8 @@ function openAuthModal(allowClose) {
   }
   document.getElementById('auth-modal').classList.add('show');
   setTimeout(function() {
-    var nameInput = document.getElementById('auth-name-input');
-    if (nameInput) nameInput.focus();
+    var el = document.getElementById('auth-email-input');
+    if (el) el.focus();
   }, 100);
 }
 window.openAuthModal = openAuthModal;
@@ -2262,36 +2336,97 @@ function closeAuthSentModal() {
 }
 window.closeAuthSentModal = closeAuthSentModal;
 
+function _showSentModal(email, isReturning) {
+  var titleEl = document.getElementById('auth-sent-title');
+  if (titleEl) {
+    titleEl.textContent = isReturning
+      ? 'Welcome back!'
+      : 'Check your email';
+  }
+  document.getElementById('auth-modal').classList.remove('show');
+  document.getElementById('auth-sent-email').textContent = email;
+  document.getElementById('auth-sent-modal').classList.add('show');
+}
+
+function _revealNameField() {
+  var nameWrap = document.getElementById('auth-name-wrap');
+  if (nameWrap) nameWrap.classList.add('reveal');
+  var submitBtn = document.getElementById('auth-submit');
+  if (submitBtn) {
+    submitBtn.textContent = 'Send Magic Link';
+    submitBtn.disabled = false;
+  }
+  _authStep = 'name';
+  setTimeout(function() {
+    var el = document.getElementById('auth-name-input');
+    if (el) el.focus();
+  }, 260);
+}
+
 // ─── SUBMIT MAGIC LINK ──────────────────────────────────────────────────
 async function submitAuth() {
-  var nameInput = document.getElementById('auth-name-input');
   var emailInput = document.getElementById('auth-email-input');
+  var nameInput = document.getElementById('auth-name-input');
   var errorEl = document.getElementById('auth-error');
   var submitBtn = document.getElementById('auth-submit');
+  errorEl.textContent = '';
 
+  if (_authStep === 'email') {
+    var email = emailInput.value.trim().toLowerCase();
+    var emailError = validateEmail(email);
+    if (emailError) { errorEl.textContent = emailError; return; }
+    _pendingEmail = email;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Checking…';
+
+    try {
+      var { data } = await supabaseClient
+        .from('users')
+        .select('email')
+        .ilike('email', email)
+        .maybeSingle();
+
+      if (data) {
+        // Returning user — fire OTP immediately
+        var { error: otpErr } = await supabaseClient.auth.signInWithOtp({
+          email: email,
+          options: {
+            emailRedirectTo: window.location.origin + '/auth-callback.html'
+          }
+        });
+        if (otpErr) throw otpErr;
+        _showSentModal(email, true);
+      } else {
+        // New user — reveal display name field
+        _revealNameField();
+      }
+    } catch (e) {
+      console.error('Auth lookup error:', e);
+      // Fail-safe: treat as new user
+      _revealNameField();
+    }
+    return;
+  }
+
+  // Phase 2: new user — validate name + fire OTP
   var displayName = nameInput.value.trim();
-  var email = emailInput.value.trim().toLowerCase();
-
   var nameError = validateDisplayName(displayName);
   if (nameError) { errorEl.textContent = nameError; return; }
-  var emailError = validateEmail(email);
-  if (emailError) { errorEl.textContent = emailError; return; }
 
-  errorEl.textContent = '';
   submitBtn.disabled = true;
   submitBtn.textContent = 'Sending…';
 
   try {
     localStorage.setItem('pending_display_name', displayName);
     var { error } = await supabaseClient.auth.signInWithOtp({
-      email: email,
-      options: { emailRedirectTo: window.location.origin + '/auth-callback.html' }
+      email: _pendingEmail,
+      options: {
+        emailRedirectTo: window.location.origin + '/auth-callback.html'
+      }
     });
     if (error) throw error;
-
-    document.getElementById('auth-modal').classList.remove('show');
-    document.getElementById('auth-sent-email').textContent = email;
-    document.getElementById('auth-sent-modal').classList.add('show');
+    _showSentModal(_pendingEmail, false);
     submitBtn.disabled = false;
     submitBtn.textContent = 'Send Magic Link';
   } catch (e) {
@@ -3684,6 +3819,8 @@ function showEndScreen() {
 
   saveScore(totalScore);
   loadGlobalLeaderboard('end-lb-widget');
+  clearTimeout(_guestBannerTimer);
+  _guestBannerTimer = setTimeout(showGuestBanner, 10000);
 }
 
 function resetGame() {
@@ -4180,11 +4317,50 @@ function viewStats() {
   window.location.href = '/stats.html';
 }
 
+// ─── GUEST REMINDER BANNER ───────────────────────────────────────────────
+var _guestBannerTimer = null;
+
+function showGuestBanner() {
+  if (practiceMode) return;
+  if (!window.isGuest) return;
+  if (sessionStorage.getItem('guest_banner_dismissed')) return;
+  var el = document.getElementById('guest-banner');
+  if (!el) return;
+  el.classList.remove('out');
+  el.classList.add('visible');
+}
+
+function guestBannerDismiss() {
+  sessionStorage.setItem('guest_banner_dismissed', '1');
+  var el = document.getElementById('guest-banner');
+  if (!el) return;
+  el.classList.add('out');
+  setTimeout(function() {
+    el.classList.remove('visible', 'out');
+  }, 320);
+}
+
+function guestBannerOpen() {
+  guestBannerDismiss();
+  if (window.openAuthModal) window.openAuthModal();
+}
+
+window.guestBannerDismiss = guestBannerDismiss;
+window.guestBannerOpen = guestBannerOpen;
+
 // Exit practice mode and return to today's natural screen (already-played or splash)
 function returnToToday() {
   // Easiest + most reliable: reload. initApp() will route correctly.
   window.location.reload();
 }
 </script>
+
+  <!-- GUEST REMINDER BANNER -->
+  <div id="guest-banner" role="status" aria-live="polite">
+    <span id="guest-banner-text" onclick="guestBannerOpen()">
+      You're a guest. Sign up to save your streak →
+    </span>
+    <button id="guest-banner-dismiss" onclick="guestBannerDismiss()" aria-label="Dismiss">✕</button>
+  </div>
 </body>
 </html>
