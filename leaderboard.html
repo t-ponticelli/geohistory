@@ -3,19 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#fef7ed">
+<meta name="theme-color" content="#faf8f5">
 <title>Leaderboard · GeoHistory</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="/styles.css" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    background: #fef7ed;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #1a1a1a;
+    background: var(--paper);
+    font-family: var(--font-ui);
+    color: var(--ink);
     padding: 16px 12px 60px;
     -webkit-font-smoothing: antialiased;
   }
-  .container { max-width: 500px; margin: 0 auto; }
+
+  .container { max-width: 412px; margin: 0 auto; }
 
   /* HEADER */
   .header {
@@ -25,8 +28,8 @@
     margin-bottom: 16px;
   }
   .back-btn {
-    background: #fffbf3;
-    border: 1px solid #e8dfd0;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -36,52 +39,54 @@
     cursor: pointer;
     font-size: 1.3rem;
     text-decoration: none;
-    color: #1a1a1a;
+    color: var(--ink);
     flex-shrink: 0;
   }
-  h1 {
-    font-family: ui-serif, Georgia, serif;
+  .lb-wordmark {
+    font-family: var(--font-display);
     font-size: 1.4rem;
-    font-weight: 900;
+    font-weight: 800;
     font-style: italic;
     letter-spacing: -0.02em;
     flex: 1;
+    color: var(--ink);
   }
-  h1 span { color: #bf0a30; }
+  .lb-wordmark span { color: var(--good); }
 
-  /* PRIMARY TAB NAV (Leaderboard / My Stats) */
+  /* PRIMARY TAB NAV */
   .tab-nav {
     display: flex;
     gap: 4px;
     margin-bottom: 16px;
-    border-bottom: 2px solid #e8dfd0;
+    border-bottom: 2px solid oklch(0.88 0.02 80);
   }
   .tab-link {
     flex: 1;
     background: none;
     border: none;
     padding: 12px 8px;
-    font-family: inherit;
+    font-family: var(--font-ui);
     font-weight: 600;
     font-size: 0.95rem;
-    color: #666;
+    color: var(--ink-soft);
     cursor: pointer;
     border-bottom: 3px solid transparent;
     margin-bottom: -2px;
     text-decoration: none;
     text-align: center;
+    transition: color .15s;
   }
   .tab-link.active {
-    color: #002868;
-    border-bottom-color: #002868;
+    color: var(--crimson);
+    border-bottom-color: var(--crimson);
   }
 
-  /* SUB TABS (Daily / Weekly) */
+  /* SUB TABS */
   .sub-tabs {
     display: flex;
-    background: #fffbf3;
-    border: 1px solid #e8dfd0;
-    border-radius: 12px;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
+    border-radius: var(--radius);
     padding: 4px;
     margin-bottom: 16px;
   }
@@ -90,113 +95,120 @@
     background: none;
     border: none;
     padding: 9px 8px;
-    font-family: inherit;
+    font-family: var(--font-ui);
     font-weight: 700;
     font-size: 0.9rem;
-    color: #666;
+    color: var(--ink-soft);
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: calc(var(--radius) - 4px);
     transition: all 0.2s;
   }
   .sub-tab.active {
-    background: #002868;
-    color: white;
+    background: var(--slate);
+    color: var(--on-slate);
   }
 
-  /* DAY NAVIGATION (daily only) */
+  /* DAY NAVIGATION */
   .day-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #fffbf3;
-    border: 1px solid #e8dfd0;
-    border-radius: 12px;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
+    border-radius: var(--radius);
     padding: 10px 12px;
     margin-bottom: 14px;
   }
   .day-arrow {
-    background: white;
-    border: 1px solid #e8dfd0;
+    background: var(--paper);
+    border: 1px solid oklch(0.88 0.02 80);
     width: 36px;
     height: 36px;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
-    color: #002868;
+    color: var(--ink);
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: opacity .15s;
   }
   .day-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
   .day-arrow:active:not(:disabled) { transform: scale(0.95); }
   .day-label { text-align: center; flex: 1; }
-  .day-name { font-weight: 700; font-size: 0.95rem; }
-  .day-date { font-size: 0.75rem; color: #666; margin-top: 2px; }
+  .day-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+  .day-date { font-size: 0.75rem; color: var(--ink-soft); margin-top: 2px; }
 
   /* META */
   .meta {
-    background: #fffbf3;
-    border: 1px solid #e8dfd0;
-    border-radius: 12px;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
+    border-radius: var(--radius);
     padding: 12px 14px;
     margin-bottom: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .meta-theme { font-weight: 700; font-size: 0.95rem; }
-  .meta-count { font-size: 0.8rem; color: #666; }
+  .meta-theme {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .meta-count { font-size: 0.8rem; color: var(--ink-soft); }
 
   /* REFRESH */
   .refresh-btn {
-    background: white;
-    border: 1px solid #e8dfd0;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
     padding: 6px 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    color: #002868;
+    color: var(--ink-soft);
     margin-bottom: 14px;
+    font-family: var(--font-ui);
+    transition: opacity .15s;
   }
-  .refresh-btn:active { transform: scale(0.97); }
-  .refresh-btn:disabled { opacity: 0.5; cursor: wait; }
+  .refresh-btn:active { opacity: 0.7; }
+  .refresh-btn:disabled { opacity: 0.4; cursor: wait; }
 
-  /* SCORE OF THE WEEK (featured card) */
+  /* SCORE OF THE WEEK */
   .sotw {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 1px solid #d97706;
-    border-radius: 12px;
-    padding: 16px;
+    background: var(--slate);
+    border-radius: var(--radius);
+    padding: 18px 16px;
     margin-bottom: 18px;
   }
   .sotw-label {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #92400e;
+    color: var(--brass);
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    font-family: var(--font-ui);
   }
   .sotw-player {
-    font-family: ui-serif, Georgia, serif;
+    font-family: var(--font-display);
     font-style: italic;
     font-size: 1.4rem;
-    font-weight: 900;
+    font-weight: 800;
     margin-bottom: 2px;
-    color: #1a1a1a;
+    color: var(--on-slate);
   }
   .sotw-meta {
     font-size: 0.85rem;
-    color: #78350f;
+    color: var(--on-slate-soft);
     margin-bottom: 8px;
   }
   .sotw-score {
-    font-family: ui-monospace, monospace;
-    font-weight: 900;
+    font-family: var(--font-mono);
+    font-weight: 700;
     font-size: 2.3rem;
-    color: #d97706;
+    color: var(--brass);
     line-height: 1;
   }
   .sotw-row {
@@ -209,9 +221,9 @@
 
   /* LEADERBOARD */
   .leaderboard {
-    background: #fffbf3;
-    border: 1px solid #e8dfd0;
-    border-radius: 12px;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
+    border-radius: var(--radius);
     overflow: hidden;
   }
   .row {
@@ -219,31 +231,32 @@
     align-items: center;
     gap: 14px;
     padding: 14px 16px;
-    border-bottom: 1px solid #e8dfd0;
+    border-bottom: 1px solid oklch(0.88 0.02 80);
   }
   .row:last-child { border-bottom: none; }
-  .row.is-me { background: #fef3c7; }
+  .row.is-me { background: oklch(0.97 0.04 85); }
   .rank {
-    font-family: ui-serif, Georgia, serif;
-    font-weight: 900;
+    font-family: var(--font-display);
+    font-weight: 800;
     font-size: 1.25rem;
     min-width: 36px;
     text-align: center;
-    color: #666;
+    color: var(--ink-soft);
   }
-  .rank.gold { color: #d97706; font-size: 1.5rem; }
-  .rank.silver { color: #9ca3af; font-size: 1.4rem; }
-  .rank.bronze { color: #b45309; font-size: 1.4rem; }
+  .rank.gold { color: var(--brass); font-size: 1.5rem; }
+  .rank.silver { color: oklch(0.72 0.02 260); font-size: 1.4rem; }
+  .rank.bronze { color: oklch(0.6 0.1 55); font-size: 1.4rem; }
   .username {
     flex: 1;
     font-weight: 600;
     font-size: 0.95rem;
     word-break: break-word;
+    color: var(--ink);
   }
   .me-tag {
     display: inline-block;
-    background: #d97706;
-    color: white;
+    background: var(--brass);
+    color: #fff;
     font-size: 0.65rem;
     font-weight: 700;
     padding: 2px 6px;
@@ -252,50 +265,53 @@
     text-transform: uppercase;
   }
   .score {
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-mono);
     font-weight: 700;
     font-size: 1rem;
     flex-shrink: 0;
+    color: var(--ink);
   }
 
-  /* SECTION HEADER (Weekly view) */
+  /* SECTION TITLE (Weekly) */
   .section-title {
-    font-family: ui-serif, Georgia, serif;
+    font-family: var(--font-display);
     font-style: italic;
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 8px;
-    color: #1a1a1a;
+    color: var(--ink);
   }
 
   /* STATES */
   .status {
-    background: #fffbf3;
-    border: 1px solid #e8dfd0;
-    border-radius: 12px;
+    background: var(--paper-2);
+    border: 1px solid oklch(0.88 0.02 80);
+    border-radius: var(--radius);
     padding: 40px 20px;
     text-align: center;
-    color: #666;
+    color: var(--ink-soft);
   }
   .status .big { font-size: 2.5rem; margin-bottom: 10px; }
   .status h3 {
-    font-family: ui-serif, Georgia, serif;
+    font-family: var(--font-display);
     font-size: 1.2rem;
     margin-bottom: 6px;
-    color: #1a1a1a;
+    color: var(--ink);
     font-style: italic;
   }
   .status p { font-size: 0.9rem; margin-bottom: 14px; }
   .play-btn {
-    background: #002868;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    text-decoration: none;
     display: inline-block;
+    background: var(--crimson);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -304,7 +320,7 @@
 
   <div class="header">
     <a href="/" class="back-btn">←</a>
-    <h1>Geo<span>History</span></h1>
+    <h1 class="lb-wordmark">Geo<span>History</span></h1>
   </div>
 
   <!-- Primary nav: Leaderboard vs My Stats -->
@@ -454,12 +470,17 @@ async function loadDaily() {
   const username = (localStorage.getItem('geo_username') || '').toLowerCase();
   
   try {
-    const { data: scores, error } = await sb
-      .from('scores')
-      .select('username, total_score, theme')
-      .eq('date', gameDate)
-      .order('total_score', { ascending: false })
-      .limit(100);
+    const [{ data: scores, error }, { data: round }] = await Promise.all([
+      sb.from('scores')
+        .select('username, total_score')
+        .eq('date', gameDate)
+        .order('total_score', { ascending: false })
+        .limit(100),
+      sb.from('daily_rounds')
+        .select('theme')
+        .eq('date', gameDate)
+        .maybeSingle(),
+    ]);
     
     if (error) {
       $('daily-content').innerHTML = `
@@ -486,7 +507,7 @@ async function loadDaily() {
     }
     
     $('meta').style.display = 'flex';
-    $('theme').textContent = scores[0].theme || 'Round';
+    $('theme').textContent = (round && round.theme) ? round.theme : 'Round';
     $('count').textContent = `${scores.length} ${scores.length === 1 ? 'player' : 'players'}`;
     
     const rows = scores.map((s, i) => {

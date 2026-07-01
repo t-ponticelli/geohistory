@@ -1213,6 +1213,79 @@
     font-size: 13.5px;
     font-style: italic;
   }
+  /* ── Global leaderboard widget (home + end screen) ── */
+  .glb-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .glb-link {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    text-decoration: none;
+    font-family: var(--font-ui);
+    letter-spacing: .02em;
+  }
+  .glb-link:hover { color: var(--ink-soft); }
+  .glb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid oklch(0.5 0.01 60 / 0.07);
+  }
+  .glb-row:first-child { border-top: none; }
+  .glb-rank {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    width: 22px;
+    text-align: right;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+  }
+  .glb-rank-gold {
+    color: var(--brass);
+    font-weight: 700;
+  }
+  .glb-name {
+    flex: 1;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .glb-score {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .glb-row-me {
+    background: oklch(0.97 0.04 85 / 0.55);
+    border-radius: 8px;
+    padding-left: 6px;
+    padding-right: 6px;
+    margin: 0 -6px;
+    border-top: none !important;
+  }
+  .glb-row-me + .glb-row { border-top: none; }
+  .glb-sep {
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 11px;
+    padding: 3px 0;
+    letter-spacing: .1em;
+    border-top: 1px solid oklch(0.5 0.01 60 / 0.07);
+  }
+  .glb-empty {
+    text-align: center;
+    padding: 14px 0;
+    color: var(--ink-faint);
+    font-size: 13px;
+    font-style: italic;
+  }
   .end-breakdown-card {
     width: 100%;
     padding: 6px 16px;
@@ -1748,14 +1821,8 @@
     <!-- Streak bump line (populated by JS) -->
     <div class="end-streak-bump rise" id="end-streak-bump" style="animation-delay: .08s;"></div>
 
-    <!-- Groups coming soon placeholder -->
-    <div class="end-friends-card rise" style="animation-delay: .1s;">
-      <div class="end-friends-header">
-        <span class="eyebrow">Friends · today</span>
-        <span style="font-size: 11px; color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: .06em;">Groups coming soon</span>
-      </div>
-      <div class="card end-friends-placeholder-body">Groups leaderboard coming soon.</div>
-    </div>
+    <!-- Global leaderboard widget — populated by loadGlobalLeaderboard() -->
+    <div id="end-lb-widget" class="end-friends-card rise" style="animation-delay: .1s;"></div>
 
     <!-- Per-question breakdown (populated by JS) -->
     <div class="card end-breakdown-card rise" id="end-breakdown" style="animation-delay: .13s;"></div>
@@ -2082,16 +2149,12 @@
             )
       ),
 
-      // Friends placeholder
+      // Global leaderboard widget — populated by loadGlobalLeaderboard()
       h('div', {
-        className: 'card rise',
-        style: { padding: '16px', marginBottom: 12, animationDelay: '.15s' }
-      },
-        h('div', { className: 'eyebrow', style: { marginBottom: 10 } }, 'Friends · today'),
-        h('div', {
-          style: { textAlign: 'center', padding: '10px 0', color: 'var(--ink-faint)', fontSize: 13 }
-        }, 'Groups coming soon')
-      ),
+        id: 'home-lb-widget',
+        className: 'rise',
+        style: { marginBottom: 12, animationDelay: '.15s' }
+      }),
 
       // Footer buttons
       h('div', {
@@ -2378,6 +2441,8 @@ async function showHome(scoreData) {
       isGuest: !!window.isGuest,
     })
   );
+  // Populate widget after React flushes to DOM
+  setTimeout(function() { loadGlobalLeaderboard('home-lb-widget'); }, 0);
 }
 
 async function loadTodayThemeForHome() {
@@ -3616,6 +3681,7 @@ function showEndScreen() {
   }
 
   saveScore(totalScore);
+  loadGlobalLeaderboard('end-lb-widget');
 }
 
 function resetGame() {
@@ -3715,12 +3781,8 @@ async function saveScore(finalScore) {
   try {
     const gameDate = getGameDate();
     
-    // Get current theme
-    let theme = 'GeoHistory';
-    try {
-      const themeEl = document.getElementById('splash-theme');
-      if (themeEl) theme = themeEl.textContent;
-    } catch(e) {}
+    // Get current theme (set by showHome() via window.currentGameTheme)
+    const theme = window.currentGameTheme || 'GeoHistory';
     
     // Save one row per game with full details
     await supabaseClient.from('scores').insert({
@@ -4001,6 +4063,111 @@ function shareYesterday() {
   openShareModal(window.yesterdayScore.total_score, getShareDots(details));
 }
 
+
+// ─── GLOBAL LEADERBOARD WIDGET ───────────────────────────────────────────────
+var _glbCache = null;
+var _glbCacheDate = null;
+
+async function fetchGlobalLeaderboard() {
+  var today = getGameDate();
+  if (_glbCache && _glbCacheDate === today) return _glbCache;
+  try {
+    var res = await supabaseClient
+      .from('scores')
+      .select('username, total_score')
+      .eq('date', today)
+      .order('total_score', { ascending: false })
+      .limit(100);
+    _glbCache = (res.data || []);
+    _glbCacheDate = today;
+    return _glbCache;
+  } catch(e) {
+    return [];
+  }
+}
+
+async function loadGlobalLeaderboard(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+
+  // Loading state
+  el.innerHTML = [
+    '<div class="glb-header">',
+      '<span class="eyebrow">Global · Today</span>',
+      '<a class="glb-link" href="/leaderboard.html">Full board →</a>',
+    '</div>',
+    '<div class="glb-empty">Loading…</div>',
+  ].join('');
+
+  var scores = await fetchGlobalLeaderboard();
+  var me = (window.currentUsername || '').trim().toLowerCase();
+
+  var header = [
+    '<div class="glb-header">',
+      '<span class="eyebrow">Global · Today</span>',
+      '<a class="glb-link" href="/leaderboard.html">Full board →</a>',
+    '</div>',
+  ].join('');
+
+  if (!scores.length) {
+    el.innerHTML = header +
+      '<div class="card"><div class="glb-empty">' +
+      'Play today’s round to claim your spot</div></div>';
+    return;
+  }
+
+  // Find user rank (0-based index, -1 if not found)
+  var myIdx = me
+    ? scores.findIndex(function(s) {
+        return (s.username || '').trim().toLowerCase() === me;
+      })
+    : -1;
+
+  function makeRow(rank, username, score, isMe) {
+    var meClass = isMe ? ' glb-row-me' : '';
+    var rankClass = rank === 1 ? ' glb-rank-gold' : '';
+    var nameStyle = isMe
+      ? ' style="font-weight:800;"'
+      : '';
+    return [
+      '<div class="glb-row' + meClass + '">',
+        '<span class="glb-rank' + rankClass + '">' + rank + '</span>',
+        '<span class="glb-name"' + nameStyle + '>',
+          escHtml(username),
+        '</span>',
+        '<span class="glb-score">' + score + '</span>',
+      '</div>',
+    ].join('');
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  var top5 = scores.slice(0, 5);
+  var rows = top5.map(function(s, i) {
+    var rank = i + 1;
+    var isMe = (myIdx === i);
+    return makeRow(rank, s.username, s.total_score, isMe);
+  });
+
+  var extraRow = '';
+  if (myIdx >= 5) {
+    var s = scores[myIdx];
+    extraRow =
+      '<div class="glb-sep">···</div>' +
+      makeRow(myIdx + 1, s.username, s.total_score, true);
+  }
+
+  el.innerHTML = header +
+    '<div class="card" style="padding:6px 16px;">' +
+    rows.join('') +
+    extraRow +
+    '</div>';
+}
 
 // Go to leaderboard
 function viewLeaderboard() {
