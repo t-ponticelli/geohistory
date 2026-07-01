@@ -2033,6 +2033,10 @@
     var loading = props.loading;
     var isGuest = props.isGuest;
 
+    React.useEffect(function() {
+      if (!loading) loadGlobalLeaderboard('home-lb-widget');
+    }, [loading]);
+
     var played = !!(initData && initData.todayScore);
     var todayScore = played ? initData.todayScore.total_score : null;
     var todayDots = played ? dotClassesFromDetails(initData.todayScore.question_details) : [];
@@ -2441,8 +2445,6 @@ async function showHome(scoreData) {
       isGuest: !!window.isGuest,
     })
   );
-  // Populate widget after React flushes to DOM
-  setTimeout(function() { loadGlobalLeaderboard('home-lb-widget'); }, 0);
 }
 
 async function loadTodayThemeForHome() {
