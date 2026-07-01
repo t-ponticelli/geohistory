@@ -7,6 +7,26 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#fef7ed">
 <title>GeoHistory</title>
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<!-- SEO -->
+<meta name="description" content="The daily geography and history trivia game. Five clues. Five guesses. One world." />
+<link rel="canonical" href="https://playgeohistory.netlify.app/" />
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://playgeohistory.netlify.app/" />
+<meta property="og:site_name" content="GeoHistory" />
+<meta property="og:title" content="GeoHistory" />
+<meta property="og:description" content="The daily geography and history trivia game. Five clues. Five guesses. One world." />
+<meta property="og:image" content="https://playgeohistory.netlify.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="GeoHistory" />
+<meta name="twitter:description" content="The daily geography and history trivia game. Five clues. Five guesses. One world." />
+<meta name="twitter:image" content="https://playgeohistory.netlify.app/og-image.png" />
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4077,12 +4097,9 @@ async function drawShareCard(canvas, score, dots) {
   ctx.save();
   ctx.shadowColor = 'rgba(0,30,20,0.55)';
   ctx.shadowBlur = 18; ctx.shadowOffsetY = 1;
-  ctx.font = 'italic 600 48px Newsreader';
-  ctx.fillStyle = cream;
-  ctx.fillText('Can you beat me?', W / 2, 1232);
-  ctx.font = "700 28px 'Space Mono'";
+  ctx.font = "700 32px 'Space Mono'";
   ctx.fillStyle = '#bdf0d6';
-  ctx.fillText('playgeohistory.netlify.app', W / 2, 1290);
+  ctx.fillText('playgeohistory.netlify.app', W / 2, 1232);
   ctx.restore();
 }
 
@@ -4094,7 +4111,7 @@ function buildShareCardText(score, dots) {
     month: 'short', day: 'numeric'
   });
   return 'GeoHistory — ' + date + '\n' + emoji +
-    '  ' + score + ' pts\nCan you beat me? playgeohistory.netlify.app';
+    '  ' + score + ' pts\nplaygeohistory.netlify.app';
 }
 
 var _shareScore = 0;
