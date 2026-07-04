@@ -2471,6 +2471,10 @@ async function signOut() {
 }
 window.signOut = signOut;
 
+// Late-auth recovery guards
+var _gameInProgress = false;
+var _authRecoveryFired = false;
+
 // ─── GUEST SESSION ──────────────────────────────────────────────────────
 function generateGuestName() {
   return 'player' + Math.floor(1000 + Math.random() * 9000);
@@ -2491,6 +2495,23 @@ function startGuestSession() {
 async function loadAuthSession() {
   try {
     var { data: { session } } = await supabaseClient.auth.getSession();
+
+    // Fallback: access token may be stale — attempt one explicit refresh
+    if (!session) {
+      console.warn('[auth] getSession returned null — attempting refreshSession()');
+      try {
+        var { data: refreshData, error: refreshErr } =
+          await supabaseClient.auth.refreshSession();
+        if (refreshErr) {
+          console.warn('[auth] refreshSession() failed:', refreshErr.message);
+        } else {
+          session = refreshData.session;
+        }
+      } catch (refreshEx) {
+        console.warn('[auth] refreshSession() threw:', refreshEx);
+      }
+    }
+
     if (session && session.user) {
       var authId = session.user.id;
       var email = session.user.email;
@@ -2508,7 +2529,7 @@ async function loadAuthSession() {
           .insert({ auth_id: authId, email: email, display_name: pendingName })
           .select()
           .single();
-        if (insertErr) { console.error('User insert error:', insertErr); return false; }
+        if (insertErr) { console.warn('[auth] user insert error:', insertErr); return false; }
         userRow = newRow;
         localStorage.removeItem('pending_display_name');
       }
@@ -2522,7 +2543,7 @@ async function loadAuthSession() {
       return true;
     }
   } catch (e) {
-    console.error('Auth session load error:', e);
+    console.warn('[auth] loadAuthSession error:', e);
   }
   return false;
 }
@@ -2784,6 +2805,22 @@ async function initApp() {
   if (nameInput) nameInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitAuth(); });
 }
 
+// Catch late-resolving session refreshes (e.g. stale token that resolves after
+// startGuestSession() has already run). Only recovers on guest→signed-in transition.
+supabaseClient.auth.onAuthStateChange(async function(event, session) {
+  if (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') return;
+  if (!window.isGuest) return;      // already signed in — TOKEN_REFRESHED is routine
+  if (_authRecoveryFired) return;   // one-shot per page load
+  _authRecoveryFired = true;
+
+  if (_gameInProgress) {
+    // Mid-round: silently restore globals so score saves under correct identity
+    await loadAuthSession();
+    return;
+  }
+  window.location.reload();
+});
+
 // Run on load
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
@@ -2954,12 +2991,13 @@ const $ = id => document.getElementById(id);
 function initMap() {
   // If map already initialized (e.g. starting a practice game after a real one), reuse it
   if (map) {
-    // Reset to default view; clear any existing markers and connector line
+    // Reset to default view; clear any existing markers, connector line, and flourish
     if (guessMarker) { guessMarker.remove(); guessMarker = null; }
     if (correctMarker) { correctMarker.remove(); correctMarker = null; }
     if (lineSourceAdded && map.getSource('connector')) {
       map.getSource('connector').setData({ type: 'FeatureCollection', features: [] });
     }
+    clearFlourish();
     return;
   }
   map = new maplibregl.Map({
@@ -3066,6 +3104,71 @@ function initMap() {
       }
     });
     lineSourceAdded = true;
+    // Apply any pending flourish (set before map finished loading)
+    if (window._pendingFlourish) {
+      applyFlourish(window._pendingFlourish);
+      window._pendingFlourish = null;
+    }
+  });
+}
+
+// ─── MAP FLOURISH ───────────────────────────────────────────────────────────
+var _flourishMarkers = [];
+var _flourishView = null;  // {center, zoom} — overrides default loadQuestion camera
+
+function clearFlourish() {
+  if (map) {
+    if (map.getLayer('flourish-border')) map.removeLayer('flourish-border');
+    if (map.getSource('flourish')) map.removeSource('flourish');
+  }
+  _flourishMarkers.forEach(function(m) { m.remove(); });
+  _flourishMarkers = [];
+  _flourishView = null;
+}
+
+async function applyFlourish(flourish) {
+  if (!map || !flourish) return;
+  clearFlourish();
+  _flourishView = flourish.view || null;
+
+  // Fetch + add border layer
+  try {
+    var resp = await fetch(flourish.geojson_file);
+    var geojson = await resp.json();
+    var s = flourish.style || {};
+    map.addSource('flourish', { type: 'geojson', data: geojson });
+    map.addLayer({
+      id: 'flourish-border',
+      type: 'line',
+      source: 'flourish',
+      paint: {
+        'line-color':   s.color   || '#d6453f',
+        'line-width':   s.weight  || 4,
+        'line-opacity': s.opacity || 0.9
+      }
+    });
+  } catch (e) {
+    console.warn('Flourish border failed:', e);
+  }
+
+  // Star markers
+  var markers = flourish.markers || [];
+  markers.forEach(function(m) {
+    var el = document.createElement('div');
+    el.style.cssText = [
+      'width:18px;height:18px;',
+      'display:flex;align-items:center;justify-content:center;',
+      'font-size:14px;',
+      'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.55));',
+      'pointer-events:none;',
+      'user-select:none;'
+    ].join('');
+    el.textContent = '★';
+    el.style.color = '#ffffff';
+    var marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([m.lng, m.lat])
+      .addTo(map);
+    _flourishMarkers.push(marker);
   });
 }
 
@@ -3074,6 +3177,7 @@ function initMap() {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function startGame() {
+  _gameInProgress = true;
   hideHomeRoot();
   $('splash').classList.remove('show');
   
@@ -3087,7 +3191,7 @@ async function startGame() {
     const gameDate = getGameDate();
     const { data: round, error } = await supabaseClient
       .from('daily_rounds')
-      .select('question_ids, theme, is_international')
+      .select('question_ids, theme, is_international, map_flourish')
       .eq('date', gameDate)
       .maybeSingle();
 
@@ -3097,6 +3201,8 @@ async function startGame() {
       // Set international scoring flag
       isInternationalRound = round.is_international === true;
       console.log('International round?', isInternationalRound);
+      // Store flourish — applied after map loads (see map.on('load') and initMap reuse path)
+      window._pendingFlourish = round.map_flourish || null;
       
       // Fetch the actual questions
       const { data: questions } = await supabaseClient
@@ -3126,7 +3232,13 @@ async function startGame() {
     console.error('Error loading questions:', e);
   }
 
+  var mapWasReady = !!map;
   initMap();
+  // If map was already loaded (reuse path), apply flourish directly
+  if (mapWasReady && window._pendingFlourish) {
+    applyFlourish(window._pendingFlourish);
+    window._pendingFlourish = null;
+  }
   loadQuestion(0);
 }
 
@@ -3328,6 +3440,7 @@ function escapeHtmlGame(s) {
 }
 
 async function startPracticeGame(date) {
+  _gameInProgress = true;
   closePastGames();
   hideHomeRoot();
   practiceMode = true;
@@ -3344,12 +3457,13 @@ async function startPracticeGame(date) {
   try {
     const { data: round, error } = await supabaseClient
       .from('daily_rounds')
-      .select('question_ids, theme, is_international')
+      .select('question_ids, theme, is_international, map_flourish')
       .eq('date', date)
       .single();
     
     if (error || !round) {
       alert('Could not load that day\'s game.');
+      _gameInProgress = false;
       practiceMode = false;
       practiceDate = null;
       $('practice-badge').classList.remove('show');
@@ -3397,10 +3511,17 @@ async function startPracticeGame(date) {
     $('score-chip').style.background = '';
     for (var i = 0; i < 5; i++) { var p = $('pip-' + i); if (p) p.className = 'pip'; }
 
+    window._pendingFlourish = round.map_flourish || null;
+    var practiceMapReady = !!map;
     initMap();
+    if (practiceMapReady && window._pendingFlourish) {
+      applyFlourish(window._pendingFlourish);
+      window._pendingFlourish = null;
+    }
     loadQuestion(0);
   } catch (e) {
     console.error('Practice game start error:', e);
+    _gameInProgress = false;
     practiceMode = false;
     practiceDate = null;
     $('practice-badge').classList.remove('show');
@@ -3422,8 +3543,12 @@ function loadQuestion(idx) {
     map.getSource('connector').setData({ type: 'FeatureCollection', features: [] });
   }
 
-  // Reset map view — focused on the Eastern US but wide enough to suggest world is in play
-  map.flyTo({ center: [-50, 40], zoom: 2.4, duration: 700 });
+  // Reset map view — use flourish view if set, otherwise default world view
+  if (_flourishView) {
+    map.jumpTo({ center: _flourishView.center, zoom: _flourishView.zoom });
+  } else {
+    map.flyTo({ center: [-50, 40], zoom: 2.4, duration: 700 });
+  }
 
   $('result-sheet').classList.remove('show');
   $('clue-card').classList.remove('collapsed');
@@ -3703,6 +3828,7 @@ function nextQuestion() {
 }
 
 function showEndScreen() {
+  _gameInProgress = false;
   $('end-screen').classList.add('show');
 
   var themeEl = document.getElementById('end-theme-name');
