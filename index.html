@@ -1620,7 +1620,7 @@
       <button class="auth-close" id="auth-close-btn" onclick="closeAuthModal()" aria-label="Close">×</button>
       <div class="auth-icon">🌍</div>
       <h2 class="auth-title">Keep your streak alive</h2>
-      <p class="auth-subtitle">Sign up with your email to save your scores and join groups.</p>
+      <p class="auth-subtitle">Sign up to play on any device and join groups.</p>
       <label class="auth-label">Email</label>
       <input type="email" id="auth-email-input" class="auth-input" placeholder="you@example.com" maxlength="100" autocomplete="email" />
       <div class="auth-hint">For sign-in only. Never shown publicly.</div>
@@ -1909,7 +1909,7 @@
 
     <!-- Anon sign-up CTA (shown for guests on real games) -->
     <div id="anon-signup-cta" style="display:none; width: 100%; margin-bottom: 10px;">
-      <button onclick="openAuthModal()" style="width:100%;padding:14px;border-radius:16px;border:none;cursor:pointer;font-family:var(--font-ui);font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:white;box-shadow:0 4px 0 oklch(0.45 0.17 50);">💌 Keep your streak alive — sign up free</button>
+      <button onclick="openAuthModal()" style="width:100%;padding:14px;border-radius:16px;border:none;cursor:pointer;font-family:var(--font-ui);font-weight:700;font-size:1rem;background:linear-gradient(135deg,var(--orange),var(--orange-deep));color:white;box-shadow:0 4px 0 oklch(0.45 0.17 50);">💌 Claim your name — sync your streak to any device</button>
     </div>
 
     <!-- Share button (hidden in practice mode) -->
@@ -2477,7 +2477,7 @@ var _authRecoveryFired = false;
 
 // ─── GUEST SESSION ──────────────────────────────────────────────────────
 function generateGuestName() {
-  return 'player' + Math.floor(1000 + Math.random() * 9000);
+  return 'player' + Math.floor(100000 + Math.random() * 900000);
 }
 
 function startGuestSession() {
@@ -2548,12 +2548,31 @@ async function loadAuthSession() {
   return false;
 }
 
-// ─── CHECK DAILY PLAY (guests always go to home) ────────────────────────
+// ─── CHECK DAILY PLAY ────────────────────────────────────────────────────
 async function checkDailyPlay() {
   var userId = window.currentUserId;
   var gameDate = getGameDate();
 
-  if (window.isGuest || !userId) {
+  if (window.isGuest) {
+    // Guests now save scores — check by username+date (user_id IS NULL scopes
+    // to guest rows, preventing collision with a signed-in user who shares the name)
+    try {
+      var { data: guestScore } = await supabaseClient
+        .from('scores')
+        .select('total_score, question_details')
+        .eq('username', window.currentUsername)
+        .is('user_id', null)
+        .eq('date', gameDate)
+        .maybeSingle();
+      await showHome(guestScore || null);
+    } catch (e) {
+      console.error('Guest daily check error:', e);
+      await showHome(null);
+    }
+    return;
+  }
+
+  if (!userId) {
     await showHome(null);
     return;
   }
@@ -4058,20 +4077,12 @@ async function saveScore(finalScore) {
     console.log('Practice mode: score NOT saved (', finalScore, 'pts)');
     return;
   }
-  if (window.isGuest || !window.currentUserId) {
-    console.log('Guest mode: score NOT saved. End screen will prompt sign-up.');
-    return;
-  }
-
   try {
     const gameDate = getGameDate();
-    
-    // Get current theme (set by showHome() via window.currentGameTheme)
     const theme = window.currentGameTheme || 'GeoHistory';
-    
-    // Save one row per game with full details
+
     await supabaseClient.from('scores').insert({
-      user_id: window.currentUserId,
+      user_id: window.currentUserId || null,
       username: window.currentUsername,
       date: gameDate,
       theme: theme,
@@ -4079,17 +4090,19 @@ async function saveScore(finalScore) {
       max_possible: MAX_POINTS.reduce((a, b) => a + b, 0),
       question_details: breakdown
     });
-    
-    // Update user's last_play_date
-    await supabaseClient
-      .from('users')
-      .update({ 
-        last_play_date: gameDate,
-        last_played_at: new Date().toISOString(),
-        total_games: 1, // Will need to increment properly later
-        total_score: finalScore
-      })
-      .eq('id', window.currentUserId);
+
+    // Only update the users table for signed-in users
+    if (!window.isGuest && window.currentUserId) {
+      await supabaseClient
+        .from('users')
+        .update({
+          last_play_date: gameDate,
+          last_played_at: new Date().toISOString(),
+          total_games: 1,
+          total_score: finalScore
+        })
+        .eq('id', window.currentUserId);
+    }
   } catch (e) {
     console.error('Error saving score:', e);
   }
@@ -4501,7 +4514,7 @@ function returnToToday() {
   <!-- GUEST REMINDER BANNER -->
   <div id="guest-banner" role="status" aria-live="polite">
     <span id="guest-banner-text" onclick="guestBannerOpen()">
-      You're a guest. Sign up to save your streak →
+      Playing as guest. Sign up to play on any device →
     </span>
     <button id="guest-banner-dismiss" onclick="guestBannerDismiss()" aria-label="Dismiss">✕</button>
   </div>
